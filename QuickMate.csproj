@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Dalamud.NET.Sdk/13.1.0">
+  <PropertyGroup>
+
+	<!-- NAudio用に追加 -->
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+
+	<!-- FFXIVClientStructs の使用に必要な設定 -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+	 <!-- Windows API を使う場合に必要 -->
+    <UseWindowsForms>true</UseWindowsForms>
+
+    <!-- プラグインのバージョン番号。更新時に上げる -->
+    <Version>1.0.0</Version>
+
+	<!-- /xlplugins に表示される説明 -->
+    <Description>A Quick Mate.</Description>
+
+	<!-- リポジトリURL。GitHubや自分の管理ページに差し替え -->
+    <PackageProjectUrl>https://github.com/shark-works/QuickMate</PackageProjectUrl>
+
+	<!-- ライセンス表記。MIT, GPL, AGPLなどを選択 -->
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+
+	<!-- NuGet パッケージにしない場合は false のままでOK -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- プラグインに含めたい静的リソースがあればここに追加  -->
+  <ItemGroup>
+    <Content Include="..\QuickMate\Image\icon_shark.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Sounds\Beep.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+  </ItemGroup>
+
+  <!-- NAudio用に追加 -->
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
+</Project>
+

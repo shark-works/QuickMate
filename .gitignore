@@ -1,0 +1,77 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.pdb
+*.csi
+*.log
+*.vspscc
+*.vssscc
+*.bak
+*.eot
+*.json.user
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+[Aa]rm/
+[Aa]rm64/
+[Xx]64/
+[Xx]86/
+bld/
+bin/
+obj/
+*.lo[gs]
+*.stash
+*.o
+*.out
+*.exe
+*.dll
+*.com
+*.lib
+*.obj
+*.exp
+*.ilk
+*.idb
+*.res
+*.pch
+*.ipdb
+*.tds
+*.woff
+*.woff2
+*.zip # DalamudPackagerで生成されるzipファイルも除外
+
+# NuGet
+*.nupkg
+.nuget/
+NuGet.Config # もしカスタムなNuGet設定を使用しない場合
+packages/
+project.assets.json # これがあなたが言及したファイルです
+.Rider/ # JetBrains Rider IDE の設定ファイル
+
+# Visual Studio Code
+.vscode/
+
+# ReSharper and other JetBrains files
+*.DotSettings
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Plugin specific
+# NAudioの音源ファイルがSounds/Beep.wavにあると仮定し、リポジトリに含めない場合は除外
+# /Sounds/
+# /Sounds/*.wav
+# ただし、配布するなら含める必要があるのでコメントアウトしています。
+# もしサウンドファイルをGitHubで配布するなら、上記の行は削除またはコメントアウトのままにしてください。
+# その場合、csprojでContentとして追加し、CopyToOutputDirectoryをPreserveNewestに設定します。
+
+# 画像ファイルがQuickMate/Image/icon_shark.pngにあると仮定し、リポジトリに含めない場合は除外
+# /Image/
+# /Image/*.png
+# 同様に、配布するなら含める必要があるのでコメントアウトしています。
+# その場合、csprojでContentとして追加し、CopyToOutputDirectoryをPreserveNewestに設定します。

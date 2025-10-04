@@ -1,0 +1,8 @@
+{
+	"Author": "DJ_Shark",
+	"Name": "QuickMate",
+	"Punchline": "Quick Party Finder",
+	"Description": "A description that shows up in /xlplugins. List any major slash-command(s).",
+	"ApplicableVersion": "api13",
+	"Tags": ["plugin"]
+  }
