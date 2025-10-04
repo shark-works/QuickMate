@@ -52,7 +52,7 @@ public class ConfigWindow : Window, IDisposable
 	public override void Draw()
 	{
 		// サンプルチェックボックス：SomePropertyToBeSavedAndWithADefault
-		// プロパティを参照できないため、ローカルコピーを使用します
+		// プロパティを参照できないため、ローカルコピーを使用
 		var configValue = configuration.SomePropertyToBeSavedAndWithADefault;
 		if (ImGui.Checkbox("Random Config Bool", ref configValue))
 		{

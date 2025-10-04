@@ -18,9 +18,9 @@ public class Configuration : IPluginConfiguration
 	// 例：何かの機能を有効/無効にするフラグ
 	public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
 
-    // 設定を保存するメソッド。
+    // 設定を保存するメソッド
 	// PluginInterface.SavePluginConfig(this) を呼ぶことで設定を永続化
-	// 以下は保存の手間を軽減するためのものです
+	// 以下は保存の手間を軽減するためのもの
 	public void Save()
 	{
 		// Plugin.cs 内で public static PluginInterface を定義している想定

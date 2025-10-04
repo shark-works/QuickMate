@@ -2,15 +2,15 @@
 using System.IO;                              // Path 組み合わせなどに使用
 using NAudio.Wave;                            // NAudio WAV 再生用
 using Dalamud.IoC;                            // [PluginService] 属性
-using Dalamud.Plugin;                         // IDalamudPlugin, DalamudPluginInterface など
-using Dalamud.Game.Text;                      // XivChatEntry, XivChatType を使うため
+using Dalamud.Plugin;                         // IDalamudPlugin, DalamudPluginInterface
+using Dalamud.Game.Text;                      // XivChatEntry, XivChatType
 using QuickMate.Windows;                      // ConfigWindow / MainWindow の namespace
 using Dalamud.Game.Command;                   // /slash コマンド用（CommandManager, CommandInfo）
 using Dalamud.Plugin.Services;                // IClientState, IDataManager, IPluginLog, ITextureProvider, ICommandManager
 using Dalamud.Interface.Windowing;            // WindowSystem（UIウィンドウ管理）
 using Dalamud.Game.ClientState.Keys;          // VirtualKeyを使う(F3 キー検出用)
-using Dalamud.Game.Text.SeStringHandling;     // SeStringBuilder を使うため
-using Dalamud.Game.ClientState.Conditions;    // ConditionFlag を使うため
+using Dalamud.Game.Text.SeStringHandling;     // SeStringBuilder
+using Dalamud.Game.ClientState.Conditions;    // ConditionFlag
 using FFXIVClientStructs.FFXIV.Client.Game;   // ActionManager
 
 namespace QuickMate;
@@ -21,7 +21,7 @@ namespace QuickMate;
 public sealed class Plugin : IDalamudPlugin
 {
 	// ===============================
-	// ① Dalamud サービスの注入 == [PluginService] を付けると Dalamud が自動的にインスタンスを設定
+	//【1】Dalamud サービスの注入 == [PluginService] を付けると Dalamud が自動的にインスタンスを設定
 	// ・PluginInterface : プラグインの設定やイベントフックを扱う
 	// ・TextureProvider : 画像リソースをロードする
 	// ・CommandManager  : /コマンド登録・解除を行う
@@ -30,7 +30,7 @@ public sealed class Plugin : IDalamudPlugin
 	// ・Log             : Dalamud の内部ログ出力
 	// ・Framework       : 毎フレーム呼ばれる Update イベントを購読できる
 	// ・KeyState        : キーボード入力を監視
-	// ・ChatGui         : ゲーム内にメッセージを表示（/echo相当）
+	// ・ChatGui         : ゲーム内にメッセージを表示
 	// ===============================
 
 	[PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
@@ -45,7 +45,7 @@ public sealed class Plugin : IDalamudPlugin
 	[PluginService] internal static ICondition Condition { get; private set; } = null!; // Condition サービス
 
 	// ===============================
-	// ② プラグイン固有のフィールド
+	//【2】プラグイン固有のフィールド
 	// - CommandName : 登録する /pmycommand の名前
 	// - Configuration : 設定オブジェクト
 	// - WindowSystem : ImGui ウィンドウ管理
@@ -66,7 +66,7 @@ public sealed class Plugin : IDalamudPlugin
 	private ConfigWindow ConfigWindow { get; init; }
 	private MainWindow MainWindow { get; init; }
 
-	// ★追加: F3 の押下状態を記録する変数
+	// F3 の押下状態を記録する変数
 	private bool lastF3 = false;
 
 	// NAudio WAV 再生用フィールド
@@ -75,7 +75,7 @@ public sealed class Plugin : IDalamudPlugin
 	private readonly string beepPath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "Sounds", "Beep.wav");
 
 	// ===============================
-	// ③ コンストラクタ == プラグインロード時に実行される初期化処理
+	//【3】コンストラクタ == プラグインロード時に実行される初期化処理
 	// - 設定をロード
 	// - ウィンドウを作成して WindowSystem に登録
 	// - スラッシュコマンド登録
@@ -133,7 +133,7 @@ public sealed class Plugin : IDalamudPlugin
 	}
 
 	// ===============================
-	// ④ Dispose == プラグインがアンロードされるときに呼ばれる後始末
+	//【4】Dispose == プラグインがアンロードされるときに呼ばれる後始末
 	// - 登録したイベントを解除
 	// - ウィンドウを破棄
 	// - コマンド解除
@@ -163,7 +163,7 @@ public sealed class Plugin : IDalamudPlugin
 	}
 
 	// ===============================
-	// ⑤ コマンドハンドラ
+	//【5】コマンドハンドラ
 	// /pmycommand を実行したとき MainWindow の表示状態を切り替える
 	// ===============================
 	private void OnCommand(string command, string args)
@@ -172,7 +172,7 @@ public sealed class Plugin : IDalamudPlugin
 	}
 
 	// ===============================
-	// ⑥ UIトグルメソッド
+	//【6】UIトグルメソッド
 	// UI トグル用ラッパー
 	// UiBuilder.OpenConfigUi / OpenMainUi イベントから呼ばれる
 	// ===============================
@@ -180,10 +180,10 @@ public sealed class Plugin : IDalamudPlugin
 	public void ToggleMainUi() => MainWindow.Toggle();
 
 	// ===============================
-	// ⑦ 毎フレーム更新処理
-	//  KeyState[VirtualKey.F3] で F3 キーの押下状態を取得。
-	//・押された瞬間だけ ChatGui.Print で /echo と同じ挙動を表示。
-	//・押しっぱなしでは連続出力されないよう lastF3 で前回状態を保持。
+	//【7】毎フレーム更新処理
+	//  KeyState[VirtualKey.F3] で F3 キーの押下状態を取得
+	//・押された瞬間だけ ChatGui.Print で /echo と同じ挙動を表示
+	//・押しっぱなしでは連続出力されないよう lastF3 で前回状態を保持
 	// ===============================
 	private unsafe void OnFrameworkUpdate(IFramework _)
 	{

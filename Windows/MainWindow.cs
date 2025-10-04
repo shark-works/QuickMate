@@ -11,12 +11,12 @@ namespace QuickMate.Windows;
 public class MainWindow : Window, IDisposable
 {
     private readonly string ImagePath; // 表示する画像のパス
-    private readonly Plugin plugin;        // Plugin インスタンス保持
+    private readonly Plugin plugin;    // Plugin インスタンス保持
 
 	//【コンストラクタ：ウィンドウ初期化】
 	// このウィンドウには、## を使用して隠し ID を付与
-	// ユーザーはウィンドウタイトルとして「My Amazing Window」を見るでしょう、
-	// しかし、ImGuiの場合、IDは「My Amazing Window##With a hidden ID」です
+	// ウィンドウタイトル「My Amazing Window」
+	// しかし、ImGuiの場合、IDは「My Amazing Window##With a hidden ID」
 	public MainWindow(Plugin plugin, string ImagePath)
 		: base("My Amazing Window##With a hidden ID", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
 	{
@@ -49,12 +49,12 @@ public class MainWindow : Window, IDisposable
 		ImGui.Spacing();
 
 		//【子ウィンドウ（スクロール可能）を作成】
-		// 通常、BeginChild() の後には無条件の EndChild() が続く必要があります
-		// スコープ終了後はImRaiiがこれを処理します
-		// これは、特定の処理を必要とするすべての ImGui 関数で機能します。例としては、BeginTable() または Indent() があります
+		// 通常、BeginChild() の後には無条件の EndChild() が続く必要あり
+		// スコープ終了後はImRaiiがこれを処理
+		// これは、特定の処理を必要とするすべての ImGui 関数で機能。例としては、BeginTable() または Indent()
 		using (var child = ImRaii.Child("SomeChildWithAScrollbar", Vector2.Zero, true))
 		{
-			// 画像表示, childが絵を描いているか確認する
+			// 画像表示, childが絵を描いているか確認
 			if (child.Success)
 			{
 				ImGui.TextUnformatted("Have a Image:");
@@ -89,7 +89,7 @@ public class MainWindow : Window, IDisposable
 					return;
 				}
 
-				// このSeStringのマクロ表現を見たい場合は、`ToMacroString()`を使用してください
+				// このSeStringのマクロ表現を見たい場合は、`ToMacroString()`を使用する
 				ImGui.TextUnformatted($"Our current job is ({localPlayer.ClassJob.RowId}) \"{localPlayer.ClassJob.Value.Abbreviation}\"");
 
 				// Lumina を使った現在地域情報
