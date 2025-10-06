@@ -1,17 +1,21 @@
 ﻿using System;
+using ImGuiNET;
 using System.IO;
 using NAudio.Wave;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using System.Numerics;
 using Dalamud.Game.Text;
-using QuickMate.Windows;
 using Dalamud.Game.Command;
 using Dalamud.Plugin.Services;
+using System.Collections.Generic;
 using Dalamud.Interface.Windowing;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.ClientState.Conditions;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Interface.Utility;
 
 namespace QuickMate;
 
@@ -22,11 +26,12 @@ public sealed class Plugin : IDalamudPlugin
 	[PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
 	[PluginService] internal static IClientState ClientState { get; private set; } = null!;
 	[PluginService] internal static IDataManager DataManager { get; private set; } = null!;
-	[PluginService] internal static IPluginLog Log { get; private set; } = null!;
+	[PluginService] internal static ICondition Condition { get; private set; } = null!;
 	[PluginService] internal static IFramework Framework { get; private set; } = null!;
 	[PluginService] internal static IKeyState KeyState { get; private set; } = null!;
+	[PluginService] internal static IGameGui GameGui { get; private set; } = null!;
 	[PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
-	[PluginService] internal static ICondition Condition { get; private set; } = null!;
+	[PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
 	private const string CommandName = "/pmycommand";
 
@@ -42,6 +47,10 @@ public sealed class Plugin : IDalamudPlugin
 	private WaveOutEvent? waveOut;
 	private AudioFileReader? audioFile;
 	private readonly string beepPath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "Sounds", "Beep.wav");
+
+    public bool showHelloText = false;
+    public float helloTimer = 0f;
+    private readonly float helloDuration = 2.5f;
 
 	public Plugin()
 	{
@@ -61,7 +70,6 @@ public sealed class Plugin : IDalamudPlugin
 		});
 
 		PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
-
 		PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUi;
 		PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
 
@@ -86,13 +94,11 @@ public sealed class Plugin : IDalamudPlugin
 		PluginInterface.UiBuilder.Draw -= WindowSystem.Draw;
 		PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUi;
 		PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
-
 		Framework.Update -= OnFrameworkUpdate;
 
 		WindowSystem.RemoveAllWindows();
 		ConfigWindow.Dispose();
 		MainWindow.Dispose();
-
 		CommandManager.RemoveHandler("/pmycommand");
 
 		waveOut?.Stop();
@@ -113,11 +119,14 @@ public sealed class Plugin : IDalamudPlugin
 		bool now = KeyState[VirtualKey.F3];
 		if (now && !lastF3)
 		{
-    		if (waveOut != null && audioFile != null)
-    		{
-        		audioFile.Position = 0;
-        		waveOut.Play();
-    		}
+			if (waveOut != null && audioFile != null)
+			{
+				audioFile.Position = 0;
+				waveOut.Play();
+			}
+
+			showHelloText = true;
+			helloTimer = helloDuration;
 
 			var am = ActionManager.Instance();
 			if (am != null)
@@ -128,7 +137,6 @@ public sealed class Plugin : IDalamudPlugin
 				float remaining = Math.Abs(realRecast - realElapsed);
 
 				bool isMounted = Condition[ConditionFlag.Mounted];
-
 				ushort territoryId = ClientState.TerritoryType;
 
 				string statusIds = "";
@@ -158,5 +166,14 @@ public sealed class Plugin : IDalamudPlugin
 			}
 		}
 		lastF3 = now;
+
+		if (showHelloText)
+		{
+			helloTimer -= (float)Framework.UpdateDelta.TotalSeconds;
+			if (helloTimer <= 0)
+			{
+				showHelloText = false;
+			}
+		}
 	}
 }

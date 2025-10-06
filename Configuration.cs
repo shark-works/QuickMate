@@ -1,5 +1,5 @@
-﻿using Dalamud.Configuration;
-using System;
+﻿using System;
+using Dalamud.Configuration;
 
 namespace QuickMate;
 

@@ -1,8 +1,13 @@
 {
 	"Author": "DJ_Shark",
 	"Name": "QuickMate",
+	"AssemblyVersion": "1.0.0",
+	"InternalName": "QuickMate",
 	"Punchline": "Quick Party Finder",
 	"Description": "A description that shows up in /xlplugins. List any major slash-command(s).",
-	"ApplicableVersion": "api13",
-	"Tags": ["plugin"]
+	"ApplicableVersion": "any",
+	"RepoUrl": "https://github.com/shark-works/QuickMate",
+	"Tags": ["utility", "test", "ffxiv"],
+	"DalamudApiLevel": 14,
+	"LoadPriority": 0
   }
