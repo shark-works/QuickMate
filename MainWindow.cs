@@ -40,9 +40,6 @@ public class MainWindow : Window, IDisposable
 		ImGui.Spacing();
 
         ImGui.Separator();
-        ImGui.Text("--- Hello Text Debug Info ---");
-        ImGui.Text($"showHelloText: {plugin.showHelloText}");
-        ImGui.Text($"helloTimer: {plugin.helloTimer:F2}");
         ImGui.Text($"LocalPlayer exists: {(Plugin.ClientState?.LocalPlayer != null)}");
         if (Plugin.ClientState?.LocalPlayer != null)
         {
@@ -60,7 +57,7 @@ public class MainWindow : Window, IDisposable
 				{
 					using (ImRaii.PushIndent(55f))
 					{
-						ImGui.Image(goatImage.Handle, goatImage.Size);
+						ImGui.Image(goatImage!.Handle, goatImage.Size);
 					}
 				}
 				else
@@ -70,71 +67,19 @@ public class MainWindow : Window, IDisposable
 
 				ImGuiHelpers.ScaledDummy(20.0f);
 
-				var localPlayer = Plugin.ClientState.LocalPlayer;
-				if (localPlayer == null)
-				{
-					ImGui.TextUnformatted("Our local player is currently not loaded.");
-				} else {
+                var localPlayer = Plugin.ClientState.LocalPlayer;
+                if (localPlayer == null)
+                {
+                    ImGui.TextUnformatted("Our local player is currently not loaded.");
+                } else {
                     if (!localPlayer.ClassJob.IsValid)
                     {
                         ImGui.TextUnformatted("Our current job is currently not valid.");
                     } else {
-                        ImGui.TextUnformatted($"Our current job is ({localPlayer.ClassJob.RowId}) \"{localPlayer.ClassJob.Value.Abbreviation}\"");
+                        ImGui.TextUnformatted($"Our current job is ({localPlayer.ClassJob.RowId}) \"{localPlayer.ClassJob.Value!.Abbreviation}\"");
                     }
-                }
-
-                var territoryId = Plugin.ClientState.TerritoryType;
-                if (Plugin.DataManager.GetExcelSheet<TerritoryType>().TryGetRow(territoryId, out var territoryRow))
-                {
-                    ImGui.TextUnformatted($"We are currently in ({territoryId}) \"{territoryRow.PlaceName.Value.Name}\"");
-                }
-                else
-                {
-                    ImGui.TextUnformatted("Invalid territory.");
                 }
 			}
 		}
-
-        if (plugin.showHelloText && Plugin.ClientState?.LocalPlayer != null)
-        {
-            var player = Plugin.ClientState.LocalPlayer;
-            Vector3 worldPos = player.Position;
-
-            worldPos.Y += 1.8f;
-
-            bool worldToScreenSuccess = false;
-            Vector2 screenPos = Vector2.Zero;
-
-            if (Plugin.GameGui.WorldToScreen(worldPos, out screenPos))
-            {
-                worldToScreenSuccess = true;
-
-                var drawList = ImGui.GetBackgroundDrawList();
-
-                drawList.PushClipRect(ImGuiHelpers.MainViewport.Pos, ImGuiHelpers.MainViewport.Pos + ImGuiHelpers.MainViewport.Size, false);
-
-                var text = "こんにちは";
-                var textSize = ImGui.CalcTextSize(text);
-
-                var textRenderPos = new Vector2(screenPos.X - textSize.X / 2, screenPos.Y - textSize.Y / 2);
-
-                drawList.AddRectFilled(
-                    new Vector2(textRenderPos.X - 4, textRenderPos.Y - 2),
-                    new Vector2(textRenderPos.X + textSize.X + 4, textRenderPos.Y + textSize.Y + 2),
-                    ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.5f))
-                );
-
-                drawList.AddText(
-                    textRenderPos,
-                    ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 1f)),
-                    text
-                );
-
-                drawList.PopClipRect();
-            }
-
-            ImGui.Text($"WorldToScreen success: {worldToScreenSuccess}");
-            ImGui.Text($"ScreenPos: X={screenPos.X:F2}, Y={screenPos.Y:F2}");
-        }
     }
 }
