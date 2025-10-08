@@ -6,7 +6,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility.Raii;
 
-namespace QuickMate;
+namespace QuickMate.Windows;
 
 public class MainWindow : Window, IDisposable
 {

@@ -21,8 +21,13 @@
     <DalamudLibPath>$(HOME)/dalamud</DalamudLibPath>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="..\QuickMate\Image\icon_shark.png">
+    <Content Include="..\QuickMate\Image\icon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+    <Content Include="..\QuickMate\Image\icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  <TargetPath>icon.png</TargetPath>
       <Visible>false</Visible>
     </Content>
     <Content Include="Sounds\Beep.wav">
