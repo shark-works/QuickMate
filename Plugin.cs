@@ -34,29 +34,34 @@ public sealed class Plugin : IDalamudPlugin
 	[PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
 	[PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
-	// プラグイン固有フィールド
+	// ======【フィールドとメンバー】======
+	public Configuration Configuration { get; init; }
 	private const string CommandName = "/qm";
 
-	public Configuration Configuration { get; init; }
-
 	public readonly WindowSystem WindowSystem = new("QuickMate");
-
 	private MainWindow MainWindow { get; init; }
-	private SubWindow WarningOverlay { get; init; }
-		private ConfigWindow ConfigWindow { get; init; }
+	private SubWindow InfoOverlay { get; init; }
+	private ConfigWindow ConfigWindow { get; init; }
 
 	private bool lastF3 = false;
+	private bool lastF4 = false;
 
 	private WaveOutEvent? waveOut;
 	private AudioFileReader? audioFile;
 	private readonly string beepPath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "Sounds", "Beep.wav");
 
-	public bool showWarningText = false;
-	public float warningTimer = 0f;
-	private readonly float warningDuration = 3.0f;
-	private bool isWarningTextActive = false;
+	// ====== F3 / F4 表示制御 ======
+	public bool showF3Text = false;
+	public float f3Timer = 0f;
+	private readonly float f3Duration = 3.0f;
+	private bool isF3TextActive = false;
 
-	// コンストラクタ
+	public bool showF4Text = false;
+	public float f4Timer = 0f;
+	private readonly float f4Duration = 3.0f;
+	private bool isF4TextActive = false;
+
+	// ======【コンストラクタ】======
 	public Plugin()
 	{
 		Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
@@ -69,8 +74,8 @@ public sealed class Plugin : IDalamudPlugin
 		ConfigWindow = new ConfigWindow(this);
 		WindowSystem.AddWindow(ConfigWindow);
 
-		WarningOverlay = new SubWindow(this);
-		WindowSystem.AddWindow(WarningOverlay);
+		InfoOverlay = new SubWindow(this);
+		WindowSystem.AddWindow(InfoOverlay);
 
 		PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
 
@@ -97,7 +102,8 @@ public sealed class Plugin : IDalamudPlugin
 			Log.Warning($"Beep.wav not found at {beepPath}");
 		}
 	}
-	// アンロード
+
+	// ======【デストラクタ】======
 	public void Dispose()
 	{
 		PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
@@ -111,8 +117,8 @@ public sealed class Plugin : IDalamudPlugin
 		WindowSystem.RemoveWindow(ConfigWindow);
 		ConfigWindow.Dispose();
 
-		WindowSystem.RemoveWindow(WarningOverlay);
-		WarningOverlay.Dispose();
+		WindowSystem.RemoveWindow(InfoOverlay);
+		InfoOverlay.Dispose();
 
 		PluginInterface.UiBuilder.Draw -= WindowSystem.Draw;
 
@@ -123,16 +129,17 @@ public sealed class Plugin : IDalamudPlugin
 		audioFile?.Dispose();
 	}
 
-	// コマンドハンドラ : (/qm)処理
+	// ====== コマンドハンドラ ======
 	private void OnCommand(string command, string args)
 	{
 		MainWindow.Toggle();
 	}
 
+	// ====== UIトグルメソッド ======
 	public void ToggleMainUi() => MainWindow.Toggle();
 	public void ToggleConfigUi() => ConfigWindow.Toggle();
 
-	// フレーム処理
+	// ====== フレーム処理 ======
 	private unsafe void OnFrameworkUpdate(IFramework _)
 	{
 		bool now = KeyState[VirtualKey.F3];
@@ -140,13 +147,15 @@ public sealed class Plugin : IDalamudPlugin
 		{
 			if (waveOut != null && audioFile != null)
 			{
-				audioFile.Position = 0;
-				waveOut.Play();
+    			waveOut.Stop();
+    			audioFile.Position = 0;
+    			waveOut.Init(audioFile);
+    			waveOut.Play();
 			}
 
-			isWarningTextActive = true;
-			warningTimer = warningDuration;
-			showWarningText = true;
+			isF3TextActive = true;
+			f3Timer = f3Duration;
+			showF3Text = true;
 
 			var am = ActionManager.Instance();
 			if (am != null)
@@ -185,25 +194,37 @@ public sealed class Plugin : IDalamudPlugin
 				});
 			}
 		}
-
 		lastF3 = now;
 
-		if (isWarningTextActive)
+		bool nowF4 = KeyState[VirtualKey.F4];
+    	if (nowF4 && !lastF4)
+    	{
+        	isF4TextActive = true;
+        	f4Timer = f4Duration;
+        	showF4Text = true;
+
+        	ChatGui.Print(new Dalamud.Game.Text.XivChatEntry
+        	{
+            	Message = new Dalamud.Game.Text.SeStringHandling.SeStringBuilder()
+                	.AddText("[QuickMate] F4キーが押されました").Build(),
+            	Type = XivChatType.Debug
+        	});
+    	}
+    	lastF4 = nowF4;
+
+		// ====== タイマー管理 ======
+		if (isF3TextActive)
 		{
-			warningTimer -= (float)Framework.UpdateDelta.TotalSeconds;
-			if (warningTimer <= 0)
-			{
-				isWarningTextActive = false;
-				showWarningText = false;
-			}
-			else
-			{
-				showWarningText = true;
-			}
+			f3Timer -= (float)Framework.UpdateDelta.TotalSeconds;
+			if (f3Timer <= 0)
+				isF3TextActive = showF3Text = false;
 		}
-		else
-		{
-			showWarningText = false;
-		}
+
+    	if (isF4TextActive)
+    	{
+        	f4Timer -= (float)Framework.UpdateDelta.TotalSeconds;
+        	if (f4Timer <= 0)
+            	isF4TextActive = showF4Text = false;
+    	}
 	}
 }
