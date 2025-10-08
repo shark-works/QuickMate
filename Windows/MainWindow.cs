@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Numerics;
-using Lumina.Excel.Sheets;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
-using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Windowing;
+using Lumina.Excel.Sheets;
 
 namespace QuickMate.Windows;
 
 public class MainWindow : Window, IDisposable
 {
-    private readonly string ImagePath;
+    private readonly string goatImagePath;
     private readonly Plugin plugin;
 
-	public MainWindow(Plugin plugin, string ImagePath)
+	public MainWindow(Plugin plugin, string goatImagePath)
 		: base("My Amazing Window##With a hidden ID", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
 	{
 		SizeConstraints = new WindowSizeConstraints
@@ -22,7 +22,7 @@ public class MainWindow : Window, IDisposable
 			MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
 		};
 
-		this.ImagePath = ImagePath;
+		this.goatImagePath = goatImagePath;
 		this.plugin = plugin;
 	}
 
@@ -39,25 +39,17 @@ public class MainWindow : Window, IDisposable
 
 		ImGui.Spacing();
 
-        ImGui.Separator();
-        ImGui.Text($"LocalPlayer exists: {(Plugin.ClientState?.LocalPlayer != null)}");
-        if (Plugin.ClientState?.LocalPlayer != null)
-        {
-            ImGui.Text($"Player Position Y: {Plugin.ClientState.LocalPlayer.Position.Y:F2}");
-        }
-        ImGui.Separator();
-
 		using (var child = ImRaii.Child("SomeChildWithAScrollbar", Vector2.Zero, true))
 		{
 			if (child.Success)
 			{
-				ImGui.TextUnformatted("Have a Image:");
-				var goatImage = Plugin.TextureProvider.GetFromFile(ImagePath).GetWrapOrDefault();
+				ImGui.TextUnformatted("Have a goat:");
+				var goatImage = Plugin.TextureProvider.GetFromFile(goatImagePath).GetWrapOrDefault();
 				if (goatImage != null)
 				{
 					using (ImRaii.PushIndent(55f))
 					{
-						ImGui.Image(goatImage!.Handle, goatImage.Size);
+						ImGui.Image(goatImage.Handle, goatImage.Size);
 					}
 				}
 				else
@@ -67,19 +59,31 @@ public class MainWindow : Window, IDisposable
 
 				ImGuiHelpers.ScaledDummy(20.0f);
 
-                var localPlayer = Plugin.ClientState.LocalPlayer;
-                if (localPlayer == null)
-                {
-                    ImGui.TextUnformatted("Our local player is currently not loaded.");
-                } else {
-                    if (!localPlayer.ClassJob.IsValid)
-                    {
-                        ImGui.TextUnformatted("Our current job is currently not valid.");
-                    } else {
-                        ImGui.TextUnformatted($"Our current job is ({localPlayer.ClassJob.RowId}) \"{localPlayer.ClassJob.Value!.Abbreviation}\"");
-                    }
-                }
+				var localPlayer = Plugin.ClientState.LocalPlayer;
+				if (localPlayer == null)
+				{
+					ImGui.TextUnformatted("Our local player is currently not loaded.");
+					return;
+				}
+
+				if (!localPlayer.ClassJob.IsValid)
+				{
+					ImGui.TextUnformatted("Our current job is currently not valid.");
+					return;
+				}
+
+				ImGui.TextUnformatted($"Our current job is ({localPlayer.ClassJob.RowId}) \"{localPlayer.ClassJob.Value.Abbreviation}\"");
+
+				var territoryId = Plugin.ClientState.TerritoryType;
+				if (Plugin.DataManager.GetExcelSheet<TerritoryType>().TryGetRow(territoryId, out var territoryRow))
+				{
+					ImGui.TextUnformatted($"We are currently in ({territoryId}) \"{territoryRow.PlaceName.Value.Name}\"");
+				}
+				else
+				{
+					ImGui.TextUnformatted("Invalid territory.");
+				}
 			}
 		}
-    }
+	}
 }
