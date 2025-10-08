@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Numerics;
+using Lumina.Excel.Sheets;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using Lumina.Excel.Sheets;
 
 namespace QuickMate.Windows;
 
 public class MainWindow : Window, IDisposable
 {
-    private readonly string goatImagePath;
+    private readonly string iconImagePath;
     private readonly Plugin plugin;
 
-	public MainWindow(Plugin plugin, string goatImagePath)
-		: base("My Amazing Window##With a hidden ID", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+	public MainWindow(Plugin plugin, string iconImagePath)
+		: base("Information Window##With a hidden ID", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
 	{
 		SizeConstraints = new WindowSizeConstraints
 		{
@@ -22,11 +22,11 @@ public class MainWindow : Window, IDisposable
 			MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
 		};
 
-		this.goatImagePath = goatImagePath;
+		this.iconImagePath = iconImagePath;
 		this.plugin = plugin;
 	}
 
-	public void Dispose() { }
+	public void Dispose() {}
 
 	public override void Draw()
 	{
@@ -43,18 +43,18 @@ public class MainWindow : Window, IDisposable
 		{
 			if (child.Success)
 			{
-				ImGui.TextUnformatted("Have a goat:");
-				var goatImage = Plugin.TextureProvider.GetFromFile(goatImagePath).GetWrapOrDefault();
-				if (goatImage != null)
+				ImGui.TextUnformatted("Have a image:");
+				var image = Plugin.TextureProvider.GetFromFile(iconImagePath).GetWrapOrDefault();
+				if (image != null)
 				{
 					using (ImRaii.PushIndent(55f))
 					{
-						ImGui.Image(goatImage.Handle, goatImage.Size);
+						ImGui.Image(image.Handle, image.Size);
 					}
 				}
 				else
 				{
-					ImGui.TextUnformatted("Image not found.");
+					ImGui.TextUnformatted("image not found.");
 				}
 
 				ImGuiHelpers.ScaledDummy(20.0f);

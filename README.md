@@ -1,2 +1,2 @@
 # QuickMate
-For my own learning
+Learning C# with Dalamud (for myself)

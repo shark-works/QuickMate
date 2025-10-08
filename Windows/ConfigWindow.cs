@@ -10,7 +10,7 @@ public class ConfigWindow : Window, IDisposable
     private readonly Configuration configuration;
 
     public ConfigWindow(Plugin plugin)
-        : base("QuickMate Configuration###QuickMateConfig")
+        : base("Configuration###QuickMateConfig")
     {
         Flags = ImGuiWindowFlags.NoResize
               | ImGuiWindowFlags.NoCollapse

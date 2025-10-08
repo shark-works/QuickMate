@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
-using Dalamud.Interface.Windowing;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Windowing;
 
 namespace QuickMate.Windows
 {
@@ -10,22 +10,22 @@ namespace QuickMate.Windows
         private readonly Plugin plugin;
 
         // === F3設定 ===
-        public Vector4 F3_TextColor { get; set; } = new(1.0f, 0.2f, 0.2f, 1.0f);   // 本文色 (赤)
+        public Vector4 F3_TextColor { get; set; } = new(1.0f, 0.2f, 0.2f, 1.0f);   // 文字色
         public Vector4 F3_OutlineColor { get; set; } = new(0f, 0f, 0f, 1.0f);      // 縁取り色
-        public float F3_FontScale { get; set; } = 1.8f;                            // フォント倍率
+        public float F3_FontScale { get; set; } = 1.4f;                            // フォント倍率
         public float F3_OutlineThickness { get; set; } = 2.0f;                     // 縁取り太さ
         public float F3_OffsetX { get; set; } = 22.0f;                             // x補正
         public float F3_OffsetY { get; set; } = 0.0f;                              // y補正
 
         // === F4設定 ===
-        public Vector4 F4_TextColor { get; set; } = new(0.2f, 0.8f, 1.0f, 1.0f);   // 本文色 (水色)
-        public Vector4 F4_OutlineColor { get; set; } = new(0f, 0f, 0f, 1.0f);      // 縁取り色
-        public float F4_FontScale { get; set; } = 1.4f;                            // フォント倍率
-        public float F4_OutlineThickness { get; set; } = 1.5f;                     // 縁取り太さ
-        public float F4_OffsetX { get; set; } = 22.0f;                             // x補正
-        public float F4_OffsetY { get; set; } = 50.0f;                             // y補正（下方向）
+        public Vector4 F4_TextColor { get; set; } = new(0.2f, 0.8f, 1.0f, 1.0f);
+        public Vector4 F4_OutlineColor { get; set; } = new(0f, 0f, 0f, 1.0f);
+        public float F4_FontScale { get; set; } = 1.4f;
+        public float F4_OutlineThickness { get; set; } = 2.0f;
+        public float F4_OffsetX { get; set; } = 22.0f;
+        public float F4_OffsetY { get; set; } = -50.0f;
 
-		//ウィンドウ:コンストラクタ
+		//ウィンドウ
 		public SubWindow(Plugin plugin)
 			: base("Information Overlay##UniqueId",
 				  ImGuiWindowFlags.NoDecoration |
@@ -106,7 +106,7 @@ namespace QuickMate.Windows
             uint outlineCol = ImGui.ColorConvertFloat4ToU32(outlineColor);
             int t = (int)Math.Ceiling(outlineThickness);
 
-            // === 縁取り描画 ===
+            // === 縁取り ===
             for (int dx = -t; dx <= t; dx++)
             {
                 for (int dy = -t; dy <= t; dy++)
@@ -117,7 +117,7 @@ namespace QuickMate.Windows
                 }
             }
 
-            // === 本文描画 ===
+            // === 描画 ===
             drawList.AddText(drawPos, mainCol, text);
         }
     }

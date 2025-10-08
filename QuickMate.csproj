@@ -21,7 +21,7 @@
     <DalamudLibPath>$(HOME)/dalamud</DalamudLibPath>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="..\QuickMate\Image\goat.png">
+    <Content Include="Image\icon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
