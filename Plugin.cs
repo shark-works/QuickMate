@@ -1,27 +1,25 @@
 ﻿// ====== usingディレクティブ ======
-//異なる名前空間に定義されているクラスを使用する
 using System;
 using System.IO;
 using System.Text;
-using System.Collections.Generic;
-using System.Numerics;
 using System.Linq;
+using System.Numerics;
+using System.Reflection;
+using System.Collections.Generic;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using Dalamud.Game.Text;
+using Dalamud.Game.Command;
 using Dalamud.Plugin.Services;
 using Dalamud.Interface.Windowing;
-using Dalamud.Game.Command;
 using Dalamud.Game.ClientState.Keys;
-using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.ClientState.Conditions;
 using ImGuiNET;
 using NAudio.Wave;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using ScouterX.Windows;
-using System.Reflection;
+using FFXIVClientStructs.FFXIV.Client.Game;
 
-// 名前空間とクラス
 namespace ScouterX;
 
 public sealed class Plugin : IDalamudPlugin
@@ -39,8 +37,7 @@ public sealed class Plugin : IDalamudPlugin
 	[PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
 	[PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
-	// ====== フィールド ======
-	// (クラスの状態とデータ保持)「部屋数」「配管場所」といった「住宅図面の構成や状態という(データを持っている)」
+	// ====== フィールド (データ保持) ======
 	public Configuration Configuration { get; init; }
 	private const string CommandName = "/qm";
 	public readonly WindowSystem WindowSystem = new("ScouterX");
@@ -50,9 +47,9 @@ public sealed class Plugin : IDalamudPlugin
 
 	private readonly bool[] _keyPressStates = new bool[(int)VirtualKey.F12 + 1];
 
-    private WaveOutEvent? _waveOut;
-    private readonly string _soundsDir;
-    private readonly Dictionary<string, byte[]> _soundCache = new();
+	private WaveOutEvent? _waveOut;
+	private readonly string _soundsDir;
+	private readonly Dictionary<string, byte[]> _soundCache = new();
 
 	public bool showF1Text = false;
 	public float f1Timer = 0f;
@@ -97,7 +94,7 @@ public sealed class Plugin : IDalamudPlugin
 		Log.Information($"=== {PluginInterface.Manifest.Name} ===");
 
 		_soundsDir = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "Sounds");
-        PreloadAllSounds();
+		PreloadAllSounds();
 	}
 
 	// ====== デストラクタ ======
@@ -118,13 +115,12 @@ public sealed class Plugin : IDalamudPlugin
 		SubWindow.Dispose();
 		ConfigWindow.Dispose();
 
-        _waveOut?.Stop();
-        _waveOut?.Dispose();
-        _soundCache.Clear();
+		_waveOut?.Stop();
+		_waveOut?.Dispose();
+		_soundCache.Clear();
 	}
 
-	// ====== プライベートメソッド ======
-	// (クラスの機能と動作)「調理」「掃除」といった「屋内で行われる具体的な作業を担う」
+	// ====== プライベートメソッド (データ処理) ======
 	private void OnCommand(string command, string args) => MainWindow.Toggle();
 	public void ToggleMainUi() => MainWindow.Toggle();
 	public void ToggleConfigUi() => ConfigWindow.Toggle();
@@ -162,9 +158,10 @@ public sealed class Plugin : IDalamudPlugin
 		_keyPressStates[keyIndex] = nowState;
 	}
 
+	// ====== F1 ======
 	private void HandleF1KeyPress()
 	{
-        PlaySoundByName("warning.wav");
+		PlaySoundByName("warning.wav");
 		isF1TextActive = true;
 		f1Timer = f1Duration;
 		showF1Text = true;
@@ -176,9 +173,10 @@ public sealed class Plugin : IDalamudPlugin
 		});
 	}
 
+	// ====== F3 ======
 	private unsafe void HandleF3KeyPress()
 	{
-        PlaySoundByName("recall.wav");
+		PlaySoundByName("recall.wav");
 		isF3TextActive = true;
 		f3Timer = f3Duration;
 		showF3Text = true;
@@ -215,6 +213,7 @@ public sealed class Plugin : IDalamudPlugin
 		});
 	}
 
+	// ====== F4 ======
 	private void HandleF4KeyPress()
 	{
 		PlaySoundByName("alert.wav");
@@ -231,33 +230,34 @@ public sealed class Plugin : IDalamudPlugin
 
 	private void PreloadAllSounds()
 	{
-    	try
-    	{
-        	var assembly = Assembly.GetExecutingAssembly();
-        	var resources = assembly.GetManifestResourceNames()
-            	.Where(n => n.EndsWith(".wav", StringComparison.OrdinalIgnoreCase));
+		try
+		{
+			var assembly = Assembly.GetExecutingAssembly();
+			var resources = assembly.GetManifestResourceNames()
+				.Where(n => n.EndsWith(".wav", StringComparison.OrdinalIgnoreCase));
 
-        	foreach (var resName in resources)
-        	{
-            	using var stream = assembly.GetManifestResourceStream(resName);
-            	if (stream == null)
-            	{
-                	Log.Warning($"Resource stream not found: {resName}");
-                	continue;
-            	}
-            	using var mem = new MemoryStream();
-            	stream.CopyTo(mem);
-            	string key = Path.GetFileName(resName);
-            	_soundCache[key] = mem.ToArray();
-        	}
-        Log.Information($"Embedded {_soundCache.Count} sound(s) preloaded from resources.");
-    	}
-    	catch (Exception ex)
-    	{
-        	Log.Error($"Error preloading embedded sounds: {ex.Message}");
-    	}
+			foreach (var resName in resources)
+			{
+				using var stream = assembly.GetManifestResourceStream(resName);
+				if (stream == null)
+				{
+					Log.Warning($"Resource stream not found: {resName}");
+					continue;
+				}
+				using var mem = new MemoryStream();
+				stream.CopyTo(mem);
+				string key = Path.GetFileName(resName);
+				_soundCache[key] = mem.ToArray();
+			}
+			Log.Information($"Embedded {_soundCache.Count} sound(s) preloaded from resources.");
+		}
+		catch (Exception ex)
+		{
+			Log.Error($"Error preloading embedded sounds: {ex.Message}");
+		}
 	}
 
+	// ====== Sound ======
 	private MemoryStream? _activeStream;
 	private void PlaySoundByName(string fileName)
 	{
@@ -312,6 +312,7 @@ public sealed class Plugin : IDalamudPlugin
 		}
 	}
 
+	// ====== GetStatus ======
 	private string GetLocalPlayerStatusIds()
 	{
 		if (ClientState.LocalPlayer == null)
@@ -323,6 +324,7 @@ public sealed class Plugin : IDalamudPlugin
 			.Select(s => s.StatusId.ToString()));
 	}
 
+	// ====== Timer ======
 	private void UpdateTextDisplayTimer(ref bool isActive, ref bool showText, ref float timer, float duration, float deltaTime)
 	{
 		if (!isActive)

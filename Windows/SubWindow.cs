@@ -10,20 +10,20 @@ namespace ScouterX.Windows
         private readonly Plugin plugin;
 
         // === F1設定 ===
-        public Vector4 F1_TextColor { get; set; } = new(1.0f, 1.0f, 0.2f, 1.0f);   // 文字色（黄色系）
-        public Vector4 F1_OutlineColor { get; set; } = new(0f, 0f, 0f, 1.0f);      // 縁取り色（黒）
+        public Vector4 F1_TextColor { get; set; } = new(1.0f, 1.0f, 0.2f, 1.0f);   // 字色
+        public Vector4 F1_OutlineColor { get; set; } = new(0f, 0f, 0f, 1.0f);      // 縁色
         public float F1_FontScale { get; set; } = 1.5f;                            // フォント倍率
-        public float F1_OutlineThickness { get; set; } = 2.0f;                     // 縁取り太さ
-        public float F1_FixedX { get; set; } = 1000.0f;                            // 固定X座標
-        public float F1_FixedY { get; set; } = 500.0f;                             // 固定Y座標
+        public float F1_OutlineThickness { get; set; } = 2.0f;                     // 縁の太さ
+        public float F1_FixedX { get; set; } = 1000.0f;                            // X座標
+        public float F1_FixedY { get; set; } = 500.0f;                             // Y座標
 
         // === F3設定 ===
-        public Vector4 F3_TextColor { get; set; } = new(1.0f, 0.2f, 0.2f, 1.0f);   // 文字色
-        public Vector4 F3_OutlineColor { get; set; } = new(0f, 0f, 0f, 1.0f);      // 縁取り色
-        public float F3_FontScale { get; set; } = 1.4f;                            // フォント倍率
-        public float F3_OutlineThickness { get; set; } = 2.0f;                     // 縁取り太さ
-        public float F3_OffsetX { get; set; } = 22.0f;                             // x補正
-        public float F3_OffsetY { get; set; } = 0.0f;                              // y補正
+        public Vector4 F3_TextColor { get; set; } = new(1.0f, 0.2f, 0.2f, 1.0f);
+        public Vector4 F3_OutlineColor { get; set; } = new(0f, 0f, 0f, 1.0f);
+        public float F3_FontScale { get; set; } = 1.4f;
+        public float F3_OutlineThickness { get; set; } = 2.0f;
+        public float F3_OffsetX { get; set; } = 22.0f;
+        public float F3_OffsetY { get; set; } = 0.0f;
 
         // === F4設定 ===
         public Vector4 F4_TextColor { get; set; } = new(0.2f, 0.8f, 1.0f, 1.0f);
@@ -92,9 +92,7 @@ namespace ScouterX.Windows
             }
         }
 
-        /// <summary>
-        /// プレイヤー頭上にオーバーレイを描画
-        /// </summary>
+        // === 頭上に描画 ===
         private void DrawOverlay(string text, Vector4 textColor, Vector4 outlineColor,
                                  float fontScale, float outlineThickness,
                                  float offsetX, float offsetY)
@@ -131,7 +129,7 @@ namespace ScouterX.Windows
             uint outlineCol = ImGui.ColorConvertFloat4ToU32(outlineColor);
             int t = (int)Math.Ceiling(outlineThickness);
 
-            // === 縁取り ===
+            // === 文字の縁 ===
             for (int dx = -t; dx <= t; dx++)
             {
                 for (int dy = -t; dy <= t; dy++)
@@ -146,9 +144,7 @@ namespace ScouterX.Windows
             drawList.AddText(drawPos, mainCol, text);
         }
 
-        /// <summary>
-        /// 固定座標にオーバーレイを描画（F1専用）
-        /// </summary>
+        // 固定座標に描画（F1用）
         private void DrawFixedOverlay(string text, Vector4 textColor, Vector4 outlineColor,
                                       float fontScale, float outlineThickness,
                                       float posX, float posY)
