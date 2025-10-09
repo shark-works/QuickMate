@@ -1,11 +1,11 @@
-﻿// usingディレクティブ
+﻿// ====== usingディレクティブ ======
+//異なる名前空間に定義されているクラスを使用する
 using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Linq;
-
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -15,13 +15,12 @@ using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
-
 using ImGuiNET;
 using NAudio.Wave;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using QuickMate.Windows;
 
-// namespaceとclass
+// 名前空間とクラス
 namespace QuickMate;
 
 public sealed class Plugin : IDalamudPlugin
@@ -39,7 +38,8 @@ public sealed class Plugin : IDalamudPlugin
 	[PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
 	[PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
-	// ====== フィールド (プライベートメンバー) ======
+	// ====== フィールド (クラスの状態とデータ保持) ======
+	// 「部屋数」「配管場所」といった「家の設計図の構成要素や状態という(データを持っている)」
 	public Configuration Configuration { get; init; }
 
 	private const string CommandName = "/qm";
@@ -120,12 +120,12 @@ public sealed class Plugin : IDalamudPlugin
 		_audioFile?.Dispose();
 	}
 
-    // プライベートメソッド実装
+	// ====== プライベートメソッド (クラスの機能と動作) ======
+	//「調理」「掃除」といった「家の中で行われる具体的な行動や作業を担う」
 	private void OnCommand(string command, string args) => MainWindow.Toggle();
 	public void ToggleMainUi() => MainWindow.Toggle();
 	public void ToggleConfigUi() => ConfigWindow.Toggle();
 
-    // ====== フレームワークアップデートハンドラ ======
 	private unsafe void OnFrameworkUpdate(IFramework _)
 	{
 		HandleKeyPressEvent(VirtualKey.F1, () => { /* F1 */ });
@@ -141,7 +141,6 @@ public sealed class Plugin : IDalamudPlugin
 		UpdateTextDisplayTimer(ref isF4TextActive, ref showF4Text, ref f4Timer, f4Duration, delta);
 	}
 
-	// ====== キープレス処理 ======
 	private void HandleKeyPressEvent(VirtualKey key, Action? onPressed)
 	{
 		int keyIndex = (int)key;
@@ -212,7 +211,6 @@ public sealed class Plugin : IDalamudPlugin
 		});
 	}
 
-    // ====== ヘルパーメソッド ======
 	private void LoadBeepSound()
 	{
 		if (!File.Exists(_beepPath))
