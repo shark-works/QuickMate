@@ -19,6 +19,7 @@ using ImGuiNET;
 using NAudio.Wave;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using ScouterX.Windows;
+using System.Reflection;
 
 // 名前空間とクラス
 namespace ScouterX;
@@ -38,12 +39,10 @@ public sealed class Plugin : IDalamudPlugin
 	[PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
 	[PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
-	// ====== フィールド (クラスの状態とデータ保持) ======
-	// 「部屋数」「配管場所」といった「家の設計図の構成要素や状態という(データを持っている)」
+	// ====== フィールド ======
+	// (クラスの状態とデータ保持)「部屋数」「配管場所」といった「住宅図面の構成や状態という(データを持っている)」
 	public Configuration Configuration { get; init; }
-
 	private const string CommandName = "/qm";
-
 	public readonly WindowSystem WindowSystem = new("ScouterX");
 	private MainWindow MainWindow { get; init; }
 	private SubWindow SubWindow { get; init; }
@@ -51,9 +50,14 @@ public sealed class Plugin : IDalamudPlugin
 
 	private readonly bool[] _keyPressStates = new bool[(int)VirtualKey.F12 + 1];
 
-	private WaveOutEvent? _waveOut;
-	private AudioFileReader? _audioFile;
-	private readonly string _beepPath;
+    private WaveOutEvent? _waveOut;
+    private readonly string _soundsDir;
+    private readonly Dictionary<string, byte[]> _soundCache = new();
+
+	public bool showF1Text = false;
+	public float f1Timer = 0f;
+	private readonly float f1Duration = 3.0f;
+	private bool isF1TextActive = false;
 
 	public bool showF3Text = false;
 	public float f3Timer = 0f;
@@ -90,11 +94,10 @@ public sealed class Plugin : IDalamudPlugin
 		});
 
 		Framework.Update += OnFrameworkUpdate;
-
 		Log.Information($"=== {PluginInterface.Manifest.Name} ===");
 
-		_beepPath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "Sounds", "Beep.wav");
-		LoadBeepSound();
+		_soundsDir = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "Sounds");
+        PreloadAllSounds();
 	}
 
 	// ====== デストラクタ ======
@@ -115,20 +118,20 @@ public sealed class Plugin : IDalamudPlugin
 		SubWindow.Dispose();
 		ConfigWindow.Dispose();
 
-		_waveOut?.Stop();
-		_waveOut?.Dispose();
-		_audioFile?.Dispose();
+        _waveOut?.Stop();
+        _waveOut?.Dispose();
+        _soundCache.Clear();
 	}
 
-	// ====== プライベートメソッド (クラスの機能と動作) ======
-	//「調理」「掃除」といった「家の中で行われる具体的な行動や作業を担う」
+	// ====== プライベートメソッド ======
+	// (クラスの機能と動作)「調理」「掃除」といった「屋内で行われる具体的な作業を担う」
 	private void OnCommand(string command, string args) => MainWindow.Toggle();
 	public void ToggleMainUi() => MainWindow.Toggle();
 	public void ToggleConfigUi() => ConfigWindow.Toggle();
 
 	private unsafe void OnFrameworkUpdate(IFramework _)
 	{
-		HandleKeyPressEvent(VirtualKey.F1, () => { /* F1 */ });
+		HandleKeyPressEvent(VirtualKey.F1, HandleF1KeyPress);
 		HandleKeyPressEvent(VirtualKey.F3, HandleF3KeyPress);
 		HandleKeyPressEvent(VirtualKey.F4, HandleF4KeyPress);
 		HandleKeyPressEvent(VirtualKey.F5, () => { /* F5 */ });
@@ -137,6 +140,7 @@ public sealed class Plugin : IDalamudPlugin
 		HandleKeyPressEvent(VirtualKey.F11, () => { /* F11 */ });
 
 		float delta = (float)Framework.UpdateDelta.TotalSeconds;
+		UpdateTextDisplayTimer(ref isF1TextActive, ref showF1Text, ref f1Timer, f1Duration, delta);
 		UpdateTextDisplayTimer(ref isF3TextActive, ref showF3Text, ref f3Timer, f3Duration, delta);
 		UpdateTextDisplayTimer(ref isF4TextActive, ref showF4Text, ref f4Timer, f4Duration, delta);
 	}
@@ -158,10 +162,23 @@ public sealed class Plugin : IDalamudPlugin
 		_keyPressStates[keyIndex] = nowState;
 	}
 
+	private void HandleF1KeyPress()
+	{
+        PlaySoundByName("warning.wav");
+		isF1TextActive = true;
+		f1Timer = f1Duration;
+		showF1Text = true;
+		ChatGui.Print(new XivChatEntry
+		{
+			Message = new SeStringBuilder()
+				.AddText("[ScouterX] F1キーが押されました").Build(),
+			Type = XivChatType.Debug
+		});
+	}
+
 	private unsafe void HandleF3KeyPress()
 	{
-		PlayBeepSound();
-
+        PlaySoundByName("recall.wav");
 		isF3TextActive = true;
 		f3Timer = f3Duration;
 		showF3Text = true;
@@ -200,6 +217,7 @@ public sealed class Plugin : IDalamudPlugin
 
 	private void HandleF4KeyPress()
 	{
+		PlaySoundByName("alert.wav");
 		isF4TextActive = true;
 		f4Timer = f4Duration;
 		showF4Text = true;
@@ -211,44 +229,86 @@ public sealed class Plugin : IDalamudPlugin
 		});
 	}
 
-	private void LoadBeepSound()
+	private void PreloadAllSounds()
 	{
-		if (!File.Exists(_beepPath))
-		{
-			return;
-		}
-		try
-		{
-			_audioFile = new AudioFileReader(_beepPath);
-			_waveOut = new WaveOutEvent();
-			_waveOut.Init(_audioFile);
-		}
-		catch (Exception ex)
-		{
-			Log.Error($"Failed to load beep sound from {_beepPath}: {ex.Message}");
-			_audioFile?.Dispose();
-			_waveOut?.Dispose();
-			_audioFile = null;
-			_waveOut = null;
-		}
+    	try
+    	{
+        	var assembly = Assembly.GetExecutingAssembly();
+        	var resources = assembly.GetManifestResourceNames()
+            	.Where(n => n.EndsWith(".wav", StringComparison.OrdinalIgnoreCase));
+
+        	foreach (var resName in resources)
+        	{
+            	using var stream = assembly.GetManifestResourceStream(resName);
+            	if (stream == null)
+            	{
+                	Log.Warning($"Resource stream not found: {resName}");
+                	continue;
+            	}
+            	using var mem = new MemoryStream();
+            	stream.CopyTo(mem);
+            	string key = Path.GetFileName(resName);
+            	_soundCache[key] = mem.ToArray();
+        	}
+        Log.Information($"Embedded {_soundCache.Count} sound(s) preloaded from resources.");
+    	}
+    	catch (Exception ex)
+    	{
+        	Log.Error($"Error preloading embedded sounds: {ex.Message}");
+    	}
 	}
 
-	private void PlayBeepSound()
+	private MemoryStream? _activeStream;
+	private void PlaySoundByName(string fileName)
 	{
-		if (_waveOut == null || _audioFile == null)
-		{
-			return;
-		}
 		try
 		{
-			_waveOut.Stop();           // 再生中は停止
-			_audioFile.Position = 0;   // 再生位置を先頭
-			_waveOut.Init(_audioFile); // 再初期化
-			_waveOut.Play();           // 再生
+			var assembly = Assembly.GetExecutingAssembly();
+
+			string? resourceName = assembly.GetManifestResourceNames()
+				.FirstOrDefault(n => n.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
+
+			if (resourceName == null)
+			{
+				Log.Warning($"Embedded sound not found: {fileName}");
+				return;
+			}
+
+			var stream = assembly.GetManifestResourceStream(resourceName);
+			if (stream == null)
+			{
+				Log.Warning($"Resource stream not found for {resourceName}");
+				return;
+			}
+
+			_waveOut?.Stop();
+			_waveOut?.Dispose();
+			_activeStream?.Dispose();
+
+			var memStream = new MemoryStream();
+			stream.CopyTo(memStream);
+			memStream.Position = 0;
+			_activeStream = memStream;
+
+			var reader = new WaveFileReader(memStream);
+			_waveOut = new WaveOutEvent();
+			_waveOut.Init(reader);
+			_waveOut.Play();
+
+			_waveOut.PlaybackStopped += (_, _) =>
+			{
+				reader.Dispose();
+				_waveOut?.Dispose();
+				_waveOut = null;
+				_activeStream?.Dispose();
+				_activeStream = null;
+			};
+
+			Log.Information($"Playing embedded sound: {fileName}");
 		}
 		catch (Exception ex)
 		{
-			Log.Error($"Error playing beep sound: {ex.Message}");
+			Log.Error($"Error playing embedded sound '{fileName}': {ex.Message}");
 		}
 	}
 

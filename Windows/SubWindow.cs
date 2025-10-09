@@ -9,6 +9,14 @@ namespace ScouterX.Windows
     {
         private readonly Plugin plugin;
 
+        // === F1設定 ===
+        public Vector4 F1_TextColor { get; set; } = new(1.0f, 1.0f, 0.2f, 1.0f);   // 文字色（黄色系）
+        public Vector4 F1_OutlineColor { get; set; } = new(0f, 0f, 0f, 1.0f);      // 縁取り色（黒）
+        public float F1_FontScale { get; set; } = 1.5f;                            // フォント倍率
+        public float F1_OutlineThickness { get; set; } = 2.0f;                     // 縁取り太さ
+        public float F1_FixedX { get; set; } = 1000.0f;                            // 固定X座標
+        public float F1_FixedY { get; set; } = 500.0f;                             // 固定Y座標
+
         // === F3設定 ===
         public Vector4 F3_TextColor { get; set; } = new(1.0f, 0.2f, 0.2f, 1.0f);   // 文字色
         public Vector4 F3_OutlineColor { get; set; } = new(0f, 0f, 0f, 1.0f);      // 縁取り色
@@ -25,28 +33,42 @@ namespace ScouterX.Windows
         public float F4_OffsetX { get; set; } = 22.0f;
         public float F4_OffsetY { get; set; } = -50.0f;
 
-		//ウィンドウ
-		public SubWindow(Plugin plugin)
-			: base("Information Overlay##UniqueId",
-				  ImGuiWindowFlags.NoDecoration |
-				  ImGuiWindowFlags.NoBackground |
-				  ImGuiWindowFlags.NoInputs |
-				  ImGuiWindowFlags.NoNav |
-				  ImGuiWindowFlags.NoSavedSettings |
-				  ImGuiWindowFlags.NoFocusOnAppearing |
-				  ImGuiWindowFlags.NoDocking)
-		{
-			this.plugin = plugin;
-			RespectCloseHotkey = false;
-			IsOpen = true;
-		}
+        // === ウィンドウ設定 ===
+        public SubWindow(Plugin plugin)
+            : base("Information Overlay##UniqueId",
+                  ImGuiWindowFlags.NoDecoration |
+                  ImGuiWindowFlags.NoBackground |
+                  ImGuiWindowFlags.NoInputs |
+                  ImGuiWindowFlags.NoNav |
+                  ImGuiWindowFlags.NoSavedSettings |
+                  ImGuiWindowFlags.NoFocusOnAppearing |
+                  ImGuiWindowFlags.NoDocking)
+        {
+            this.plugin = plugin;
+            RespectCloseHotkey = false;
+            IsOpen = true;
+        }
 
         public void Dispose() { }
 
         public override void Draw()
         {
+            var drawList = ImGui.GetBackgroundDrawList();
+
+            // === F1表示 ===
+            if (plugin.showF1Text)
+            {
+                DrawFixedOverlay("F1 KEY PRESSED",
+                    F1_TextColor,
+                    F1_OutlineColor,
+                    F1_FontScale,
+                    F1_OutlineThickness,
+                    F1_FixedX,
+                    F1_FixedY);
+            }
+
             // === F3表示 ===
-    	if (plugin.showF3Text)
+            if (plugin.showF3Text)
             {
                 DrawOverlay("F3 KEY PRESSED",
                     F3_TextColor,
@@ -58,7 +80,7 @@ namespace ScouterX.Windows
             }
 
             // === F4表示 ===
-    		if (plugin.showF4Text)
+            if (plugin.showF4Text)
             {
                 DrawOverlay("F4 KEY PRESSED",
                     F4_TextColor,
@@ -70,6 +92,9 @@ namespace ScouterX.Windows
             }
         }
 
+        /// <summary>
+        /// プレイヤー頭上にオーバーレイを描画
+        /// </summary>
         private void DrawOverlay(string text, Vector4 textColor, Vector4 outlineColor,
                                  float fontScale, float outlineThickness,
                                  float offsetX, float offsetY)
@@ -117,7 +142,37 @@ namespace ScouterX.Windows
                 }
             }
 
-            // === 描画 ===
+            // === 本体描画 ===
+            drawList.AddText(drawPos, mainCol, text);
+        }
+
+        /// <summary>
+        /// 固定座標にオーバーレイを描画（F1専用）
+        /// </summary>
+        private void DrawFixedOverlay(string text, Vector4 textColor, Vector4 outlineColor,
+                                      float fontScale, float outlineThickness,
+                                      float posX, float posY)
+        {
+            var drawList = ImGui.GetBackgroundDrawList();
+            var textSize = ImGui.CalcTextSize(text) * fontScale;
+
+            Vector2 drawPos = new(posX, posY);
+            uint mainCol = ImGui.ColorConvertFloat4ToU32(textColor);
+            uint outlineCol = ImGui.ColorConvertFloat4ToU32(outlineColor);
+            int t = (int)Math.Ceiling(outlineThickness);
+
+            // === 縁取り ===
+            for (int dx = -t; dx <= t; dx++)
+            {
+                for (int dy = -t; dy <= t; dy++)
+                {
+                    if (dx == 0 && dy == 0)
+                        continue;
+                    drawList.AddText(new Vector2(drawPos.X + dx, drawPos.Y + dy), outlineCol, text);
+                }
+            }
+
+            // === 本体描画 ===
             drawList.AddText(drawPos, mainCol, text);
         }
     }

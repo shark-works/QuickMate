@@ -33,6 +33,20 @@
           "NAudio.WinMM": "2.2.1"
         }
       },
+      "Resourcer.Fody": {
+        "type": "Direct",
+        "requested": "[1.8.1, )",
+        "resolved": "1.8.1",
+        "contentHash": "FPeK4jKyyX5+mIjTnHNReGZk2/2xDhmu44UsBI5w9WEhbr4oTMmht3rnBr46A+GCGepC4+2N41K4vExDYiGNVQ==",
+        "dependencies": {
+          "Fody": "6.6.4"
+        }
+      },
+      "Fody": {
+        "type": "Transitive",
+        "resolved": "6.6.4",
+        "contentHash": "vLZS+oa+ndUHYPlx/8n9bBTT3dHkCF0riml4paKq4D663+cZd47x1uagQo32D/gKFZ/sfmV1oqKaLmH0elxq4A=="
+      },
       "Microsoft.NETCore.Platforms": {
         "type": "Transitive",
         "resolved": "3.1.0",
