@@ -3,7 +3,7 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
 
-namespace QuickMate.Windows
+namespace ScouterX.Windows
 {
     public class SubWindow : Window, IDisposable
     {

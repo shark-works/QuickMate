@@ -3,14 +3,14 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
 
-namespace QuickMate.Windows;
+namespace ScouterX.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
     private readonly Configuration configuration;
 
     public ConfigWindow(Plugin plugin)
-        : base("Configuration###QuickMateConfig")
+        : base("Configuration###ScouterXConfig")
     {
         Flags = ImGuiWindowFlags.NoResize
               | ImGuiWindowFlags.NoCollapse

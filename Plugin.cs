@@ -18,10 +18,10 @@ using Dalamud.Game.Text.SeStringHandling;
 using ImGuiNET;
 using NAudio.Wave;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using QuickMate.Windows;
+using ScouterX.Windows;
 
 // 名前空間とクラス
-namespace QuickMate;
+namespace ScouterX;
 
 public sealed class Plugin : IDalamudPlugin
 {
@@ -44,7 +44,7 @@ public sealed class Plugin : IDalamudPlugin
 
 	private const string CommandName = "/qm";
 
-	public readonly WindowSystem WindowSystem = new("QuickMate");
+	public readonly WindowSystem WindowSystem = new("ScouterX");
 	private MainWindow MainWindow { get; init; }
 	private SubWindow SubWindow { get; init; }
 	private ConfigWindow ConfigWindow { get; init; }
@@ -206,7 +206,7 @@ public sealed class Plugin : IDalamudPlugin
 		ChatGui.Print(new XivChatEntry
 		{
 			Message = new SeStringBuilder()
-				.AddText("[QuickMate] F4キーが押されました").Build(),
+				.AddText("[ScouterX] F4キーが押されました").Build(),
 			Type = XivChatType.Debug
 		});
 	}

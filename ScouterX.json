@@ -1,12 +1,12 @@
 {
 	"Author": "DJ_Shark",
-	"Name": "QuickMate",
+	"Name": "ScouterX",
 	"AssemblyVersion": "1.0.0",
-	"InternalName": "QuickMate",
+	"InternalName": "ScouterX",
 	"Punchline": "for myself",
 	"Description": "A description that shows up in /xlplugins.",
 	"ApplicableVersion": "any",
-	"RepoUrl": "https://github.com/shark-works/QuickMate",
+	"RepoUrl": "https://github.com/shark-works/ScouterX",
 	"Tags": ["utility", "test"],
 	"DalamudApiLevel": 14,
 	"LoadPriority": 0

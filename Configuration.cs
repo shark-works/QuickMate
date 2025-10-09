@@ -1,7 +1,7 @@
 ﻿using System;
 using Dalamud.Configuration;
 
-namespace QuickMate;
+namespace ScouterX;
 
 [Serializable]
 public class Configuration : IPluginConfiguration
