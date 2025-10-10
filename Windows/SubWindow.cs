@@ -7,7 +7,9 @@ namespace ScouterX.Windows
 {
     public class SubWindow : Window, IDisposable
     {
-        private readonly Plugin plugin;
+		private readonly Plugin plugin;
+
+		private enum Alignment{ Left, Center, Right }
 
         private struct OverlaySettings
         {
@@ -21,6 +23,8 @@ namespace ScouterX.Windows
 
             public float OffsetX { get; set; }
             public float OffsetY { get; set; }
+
+			public Alignment TextAlign { get; set; }
         }
 
         private OverlaySettings F1Settings { get; set; }
@@ -48,7 +52,8 @@ namespace ScouterX.Windows
                 FontScale = 1.5f,
                 OutlineThickness = 1.0f,
                 FixedX = 1500.0f,
-                FixedY = 500.0f
+                FixedY = 500.0f,
+				TextAlign = Alignment.Left
             };
 
             F3Settings = new OverlaySettings
@@ -57,8 +62,9 @@ namespace ScouterX.Windows
                 OutlineColor = new(0f, 0f, 0f, 1.0f),
                 FontScale = 1.4f,
                 OutlineThickness = 1.0f,
-                OffsetX = 0.0f,                 //左右調整
-                OffsetY = 0.0f                  //上下調整
+                OffsetX = 0.0f,                 //左右調整はここ
+                OffsetY = 0.0f,                 //上下調整はここ
+				TextAlign = Alignment.Center
             };
 
             F4Settings = new OverlaySettings
@@ -68,7 +74,8 @@ namespace ScouterX.Windows
                 FontScale = 1.6f,
                 OutlineThickness = 1.0f,
                 OffsetX = 0.0f,
-                OffsetY = -50.0f
+                OffsetY = -50.0f,
+				TextAlign = Alignment.Center
             };
         }
 
@@ -102,7 +109,6 @@ namespace ScouterX.Windows
             if (player == null)
                 return;
 
-            // === 頭上位置 ===
             Vector3 worldPos = player.Position;
             worldPos.Y += 1.7f;
 
@@ -111,7 +117,6 @@ namespace ScouterX.Windows
 
             var drawList = ImGui.GetBackgroundDrawList();
 
-            // === カメラ補正 ===
             if (Plugin.ClientState?.LocalPlayer?.Position is Vector3 camPos)
             {
                 float distance = Vector3.Distance(worldPos, camPos);
@@ -119,15 +124,27 @@ namespace ScouterX.Windows
                 screenPos.X += correction * 10f;
             }
 
-            ImGui.PushFont(ImGui.GetFont());              // 現在のフォントをプッシュ
-            ImGui.SetWindowFontScale(settings.FontScale); // スケールを適用
+            ImGui.PushFont(ImGui.GetFont());
+            ImGui.SetWindowFontScale(settings.FontScale);
             var textSize = ImGui.CalcTextSize(text);
-            ImGui.SetWindowFontScale(1.0f);               // スケールをリセット
-			ImGui.PopFont();                              // フォントをポップ
+            ImGui.SetWindowFontScale(1.0f);
+			ImGui.PopFont();
 
-            // === 中央補正 + 手動オフセット ===
+            float x = screenPos.X;
+            switch (settings.TextAlign)
+            {
+                case Alignment.Left:
+                    x = screenPos.X;
+                    break;
+                case Alignment.Center:
+                    x = screenPos.X - textSize.X / 2;
+                    break;
+                case Alignment.Right:
+                    x = screenPos.X - textSize.X;
+                    break;
+            }
             Vector2 drawPos = new(
-                screenPos.X - textSize.X / 2 + settings.OffsetX,
+                x + settings.OffsetX,
                 screenPos.Y - textSize.Y + settings.OffsetY
             );
 
@@ -138,7 +155,27 @@ namespace ScouterX.Windows
         private void DrawFixedOverlay(string text, OverlaySettings settings)
         {
             var drawList = ImGui.GetBackgroundDrawList();
-            Vector2 drawPos = new(settings.FixedX, settings.FixedY);
+
+            ImGui.PushFont(ImGui.GetFont());
+            ImGui.SetWindowFontScale(settings.FontScale);
+            var textSize = ImGui.CalcTextSize(text);
+            ImGui.SetWindowFontScale(1.0f);
+            ImGui.PopFont();
+
+            float x = settings.FixedX;
+            switch (settings.TextAlign)
+            {
+                case Alignment.Left:
+                    break;
+                case Alignment.Center:
+                    x -= textSize.X / 2;
+                    break;
+                case Alignment.Right:
+                    x -= textSize.X;
+                    break;
+            }
+
+            Vector2 drawPos = new(x, settings.FixedY);
             DrawScaledText(drawList, text, drawPos, settings.TextColor, settings.OutlineColor, settings.FontScale, settings.OutlineThickness);
         }
 
@@ -152,7 +189,6 @@ namespace ScouterX.Windows
             uint outlineCol = ImGui.ColorConvertFloat4ToU32(outline);
             int t = (int)Math.Ceiling(outlineThickness);
 
-            // 縁取り
             for (int dx = -t; dx <= t; dx++)
             {
                 for (int dy = -t; dy <= t; dy++)
@@ -164,10 +200,9 @@ namespace ScouterX.Windows
                 }
             }
 
-            // 本体
             drawList.AddText(ImGui.GetFont(), ImGui.GetFontSize(), pos, mainCol, text);
 
-            ImGui.SetWindowFontScale(1.0f); // スケールをリセット
+            ImGui.SetWindowFontScale(1.0f);
             ImGui.PopFont();
         }
     }
