@@ -92,6 +92,8 @@ namespace ScouterX.Windows
 
         public override void Draw()
 		{
+			if (Plugin.ClientState == null || !Plugin.ClientState.IsLoggedIn)
+				return;
 
             if (Plugin.GameGui == null || Plugin.ClientState == null)
                 return;
@@ -116,17 +118,20 @@ namespace ScouterX.Windows
 
 			//F5
 			if (plugin.showF5Timer)
-            {
+			{
+				if (plugin.f5Remaining < 0f)
+					plugin.f5Remaining = 0f;
+
                 TimeSpan time = TimeSpan.FromSeconds(plugin.f5Remaining);
                 string timeText = $"{time.Minutes:D2}:{time.Seconds:D2}";
 				var color = new Vector4(1f, 0.2f, 0.2f, 1f);
 
-    			if (plugin.f5Remaining <= 0f)
-        			color = new Vector4(1f, 1f, 1f, 1f); // 白
+    			if (plugin.f5Remaining == 0f)
+        			color = new Vector4(1f, 1f, 1f, 1f);
     			else if (plugin.f5Remaining <= 5f)
-        			color = new Vector4(1f, 1f, 0.3f, 1f); // 黄色
+        			color = new Vector4(1f, 1f, 0.3f, 1f);
     			else if (plugin.f5Remaining <= 30f)
-        			color = new Vector4(1f, 0.6f, 0.1f, 1f); // オレンジ
+        			color = new Vector4(1f, 0.6f, 0.1f, 1f);
 
     			var settings = F5Settings;
     			settings.TextColor = color;
@@ -134,10 +139,10 @@ namespace ScouterX.Windows
 
     			DrawFixedOverlay(timeText, F5Settings);
             }
-            else
+    		else if (Plugin.ClientState.IsLoggedIn)
             {
     			var settings = F5Settings;
-    			settings.TextColor = new Vector4(1f, 1f, 1f, 1f); // 白にリセット
+    			settings.TextColor = new Vector4(1f, 1f, 1f, 1f);
     			DrawFixedOverlay("00:00", settings);
             }
         }

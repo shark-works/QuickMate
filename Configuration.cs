@@ -12,6 +12,8 @@ public class Configuration : IPluginConfiguration
 
 	public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
 
+	public bool OpenOnLogin { get; set; } = true;
+
 	public void Save()
 	{
 		Plugin.PluginInterface.SavePluginConfig(this);

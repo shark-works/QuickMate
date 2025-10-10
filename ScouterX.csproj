@@ -63,8 +63,15 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Sounds\warning.wav" />
-    <EmbeddedResource Include="Sounds\recall.wav" />
     <EmbeddedResource Include="Sounds\alert.wav" />
+    <EmbeddedResource Include="Sounds\caution.wav" />
+    <EmbeddedResource Include="Sounds\charge.wav" />
+	<EmbeddedResource Include="Sounds\down.wav" />
+	<EmbeddedResource Include="Sounds\kirameki.wav" />
+	<EmbeddedResource Include="Sounds\over.wav" />
+	<EmbeddedResource Include="Sounds\recall.wav" />
+	<EmbeddedResource Include="Sounds\reply.wav" />
+	<EmbeddedResource Include="Sounds\up.wav" />
+	<EmbeddedResource Include="Sounds\warning.wav" />
   </ItemGroup>
 </Project>
