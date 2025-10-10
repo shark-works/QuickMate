@@ -17,19 +17,17 @@ namespace ScouterX.Windows
             public Vector4 OutlineColor { get; set; }
             public float FontScale { get; set; }
             public float OutlineThickness { get; set; }
-
             public float FixedX { get; set; }
             public float FixedY { get; set; }
-
             public float OffsetX { get; set; }
             public float OffsetY { get; set; }
-
 			public Alignment TextAlign { get; set; }
         }
 
         private OverlaySettings F1Settings { get; set; }
         private OverlaySettings F3Settings { get; set; }
         private OverlaySettings F4Settings { get; set; }
+		private OverlaySettings F5Settings { get; set; }
 
         public SubWindow(Plugin plugin)
             : base("Information Overlay##UniqueId",
@@ -67,38 +65,80 @@ namespace ScouterX.Windows
 				TextAlign = Alignment.Center
             };
 
-            F4Settings = new OverlaySettings
-            {
-                TextColor = new(0.2f, 0.8f, 1.0f, 1.0f),
-                OutlineColor = new(0f, 0f, 0f, 1.0f),
-                FontScale = 1.6f,
-                OutlineThickness = 1.0f,
-                OffsetX = 0.0f,
-                OffsetY = -50.0f,
+			F4Settings = new OverlaySettings
+			{
+				TextColor = new(0.2f, 0.8f, 1.0f, 1.0f),
+				OutlineColor = new(0f, 0f, 0f, 1.0f),
+				FontScale = 1.6f,
+				OutlineThickness = 1.0f,
+				OffsetX = 0.0f,
+				OffsetY = -50.0f,
 				TextAlign = Alignment.Center
+			};
+
+			F5Settings = new OverlaySettings
+            {
+                TextColor = new(1.0f, 1.0f, 1.0f, 1.0f),
+                OutlineColor = new(0f, 0f, 0f, 1.0f),
+                FontScale = 1.8f,
+                OutlineThickness = 1.0f,
+                FixedX = 1000.0f,
+                FixedY = 700.0f,
+                TextAlign = Alignment.Center
             };
         }
 
-        public void Dispose() { }
+		public void Dispose() { }
 
         public override void Draw()
-        {
+		{
+
             if (Plugin.GameGui == null || Plugin.ClientState == null)
                 return;
 
-            if (plugin.showF1Text)
-            {
-                DrawFixedOverlay("F1 KEY PRESSED", F1Settings);
-            }
+			//F1
+			if (plugin.showF1Text)
+			{
+				DrawFixedOverlay("F1 KEY PRESSED", F1Settings);
+			}
 
+			//F3
             if (plugin.showF3Text)
             {
                 DrawOverlay("F3 KEY PRESSED", F3Settings);
             }
 
-            if (plugin.showF4Text)
+			//F4
+			if (plugin.showF4Text)
+			{
+				DrawOverlay("F4 KEY PRESSED", F4Settings);
+			}
+
+			//F5
+			if (plugin.showF5Timer)
             {
-                DrawOverlay("F4 KEY PRESSED", F4Settings);
+                TimeSpan time = TimeSpan.FromSeconds(plugin.f5Remaining);
+                string timeText = $"{time.Minutes:D2}:{time.Seconds:D2}";
+				var color = new Vector4(1f, 0.2f, 0.2f, 1f);
+
+    			if (plugin.f5Remaining <= 0f)
+        			color = new Vector4(1f, 1f, 1f, 1f); // 白
+    			else if (plugin.f5Remaining <= 5f)
+        			color = new Vector4(1f, 1f, 0.3f, 1f); // 黄色
+    			else if (plugin.f5Remaining <= 30f)
+        			color = new Vector4(1f, 0.6f, 0.1f, 1f); // オレンジ
+
+    			var settings = F5Settings;
+    			settings.TextColor = color;
+    			F5Settings = settings;
+
+    			DrawFixedOverlay(timeText, F5Settings);
+            }
+            else
+            {
+    			var settings = F5Settings;
+    			settings.TextColor = new Vector4(1f, 1f, 1f, 1f); // 白にリセット
+    			DrawFixedOverlay("00:00", settings);
             }
         }
 
@@ -106,9 +146,10 @@ namespace ScouterX.Windows
         private void DrawOverlay(string text, OverlaySettings settings)
         {
             var player = Plugin.ClientState?.LocalPlayer;
-            if (player == null)
-                return;
+			if (player == null)
+				return;
 
+            //キャラクター係数
             Vector3 worldPos = player.Position;
             worldPos.Y += 1.7f;
 
@@ -117,12 +158,13 @@ namespace ScouterX.Windows
 
             var drawList = ImGui.GetBackgroundDrawList();
 
-            if (Plugin.ClientState?.LocalPlayer?.Position is Vector3 camPos)
-            {
-                float distance = Vector3.Distance(worldPos, camPos);
-                float correction = Math.Clamp(distance / 150f, 0f, 1.5f);
-                screenPos.X += correction * 10f;
-            }
+			//カメラ距離補正
+			if (Plugin.ClientState?.LocalPlayer?.Position is Vector3 camPos)
+			{
+				float distance = Vector3.Distance(worldPos, camPos);
+				float correction = Math.Clamp(distance / 150f, 0f, 1.5f);
+				screenPos.X += correction * 10f;
+			}
 
             ImGui.PushFont(ImGui.GetFont());
             ImGui.SetWindowFontScale(settings.FontScale);
@@ -151,33 +193,33 @@ namespace ScouterX.Windows
             DrawScaledText(drawList, text, drawPos, settings.TextColor, settings.OutlineColor, settings.FontScale, settings.OutlineThickness);
         }
 
-        // === 固定描画 ===
-        private void DrawFixedOverlay(string text, OverlaySettings settings)
-        {
-            var drawList = ImGui.GetBackgroundDrawList();
+		// === 固定描画 ===
+		private void DrawFixedOverlay(string text, OverlaySettings settings)
+		{
+			var drawList = ImGui.GetBackgroundDrawList();
 
-            ImGui.PushFont(ImGui.GetFont());
-            ImGui.SetWindowFontScale(settings.FontScale);
-            var textSize = ImGui.CalcTextSize(text);
-            ImGui.SetWindowFontScale(1.0f);
-            ImGui.PopFont();
+			ImGui.PushFont(ImGui.GetFont());
+			ImGui.SetWindowFontScale(settings.FontScale);
+			var textSize = ImGui.CalcTextSize(text);
+			ImGui.SetWindowFontScale(1.0f);
+			ImGui.PopFont();
 
-            float x = settings.FixedX;
-            switch (settings.TextAlign)
-            {
-                case Alignment.Left:
-                    break;
-                case Alignment.Center:
-                    x -= textSize.X / 2;
-                    break;
-                case Alignment.Right:
-                    x -= textSize.X;
-                    break;
-            }
+			float x = settings.FixedX;
+			switch (settings.TextAlign)
+			{
+				case Alignment.Left:
+					break;
+				case Alignment.Center:
+					x -= textSize.X / 2;
+					break;
+				case Alignment.Right:
+					x -= textSize.X;
+					break;
+			}
 
-            Vector2 drawPos = new(x, settings.FixedY);
-            DrawScaledText(drawList, text, drawPos, settings.TextColor, settings.OutlineColor, settings.FontScale, settings.OutlineThickness);
-        }
+			Vector2 drawPos = new(x, settings.FixedY);
+			DrawScaledText(drawList, text, drawPos, settings.TextColor, settings.OutlineColor, settings.FontScale, settings.OutlineThickness);
+		}
 
         private void DrawScaledText(ImDrawListPtr drawList, string text, Vector2 pos,
                                     Vector4 color, Vector4 outline, float scale, float outlineThickness)

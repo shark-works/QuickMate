@@ -24,6 +24,7 @@ namespace ScouterX;
 
 public sealed class Plugin : IDalamudPlugin
 {
+
 	// ====== サービスインジェクション ======
 	[PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
 	[PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
@@ -36,6 +37,7 @@ public sealed class Plugin : IDalamudPlugin
 	[PluginService] internal static IGameGui GameGui { get; private set; } = null!;
 	[PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
 	[PluginService] internal static IPluginLog Log { get; private set; } = null!;
+
 
 	// ====== フィールド (データ保持) ======
 	public Configuration Configuration { get; init; }
@@ -65,6 +67,11 @@ public sealed class Plugin : IDalamudPlugin
 	public float f4Timer = 0f;
 	private readonly float f4Duration = 3.0f;
 	private bool isF4TextActive = false;
+
+	public bool showF5Timer = false;
+	public float f5Remaining = 0f;
+	private bool isF5Running = false;
+
 
 	// ====== コンストラクタ ======
 	public Plugin()
@@ -97,6 +104,7 @@ public sealed class Plugin : IDalamudPlugin
 		PreloadAllSounds();
 	}
 
+
 	// ====== デストラクタ ======
 	public void Dispose()
 	{
@@ -120,6 +128,7 @@ public sealed class Plugin : IDalamudPlugin
 		_soundCache.Clear();
 	}
 
+
 	// ====== プライベートメソッド (データ処理) ======
 	private void OnCommand(string command, string args) => MainWindow.Toggle();
 	public void ToggleMainUi() => MainWindow.Toggle();
@@ -130,7 +139,7 @@ public sealed class Plugin : IDalamudPlugin
 		HandleKeyPressEvent(VirtualKey.F1, HandleF1KeyPress);
 		HandleKeyPressEvent(VirtualKey.F3, HandleF3KeyPress);
 		HandleKeyPressEvent(VirtualKey.F4, HandleF4KeyPress);
-		HandleKeyPressEvent(VirtualKey.F5, () => { /* F5 */ });
+		HandleKeyPressEvent(VirtualKey.F5, HandleF5KeyPress);
 		HandleKeyPressEvent(VirtualKey.F7, () => { /* F7 */ });
 		HandleKeyPressEvent(VirtualKey.F9, () => { /* F9 */ });
 		HandleKeyPressEvent(VirtualKey.F11, () => { /* F11 */ });
@@ -139,6 +148,18 @@ public sealed class Plugin : IDalamudPlugin
 		UpdateTextDisplayTimer(ref isF1TextActive, ref showF1Text, ref f1Timer, f1Duration, delta);
 		UpdateTextDisplayTimer(ref isF3TextActive, ref showF3Text, ref f3Timer, f3Duration, delta);
 		UpdateTextDisplayTimer(ref isF4TextActive, ref showF4Text, ref f4Timer, f4Duration, delta);
+
+		// カウントダウン更新
+		if (isF5Running)
+		{
+			f5Remaining -= delta;
+			if (f5Remaining <= 0)
+			{
+				f5Remaining = 0;
+				isF5Running = false;
+				showF5Timer = false;
+			}
+		}
 	}
 
 	private void HandleKeyPressEvent(VirtualKey key, Action? onPressed)
@@ -224,6 +245,21 @@ public sealed class Plugin : IDalamudPlugin
 		{
 			Message = new SeStringBuilder()
 				.AddText("[ScouterX] F4キーが押されました").Build(),
+			Type = XivChatType.Debug
+		});
+	}
+
+	// ====== F5 ======
+	private void HandleF5KeyPress()
+	{
+		isF5Running = true;
+		showF5Timer = true;
+		f5Remaining = 60f;
+		PlaySoundByName("timer.wav");
+
+		ChatGui.Print(new XivChatEntry
+		{
+			Message = new SeStringBuilder().AddText("[ScouterX] カウントダウン開始 (60秒)").Build(),
 			Type = XivChatType.Debug
 		});
 	}
