@@ -68,6 +68,7 @@
     <EmbeddedResource Include="Sounds\charge.wav" />
 	<EmbeddedResource Include="Sounds\down.wav" />
 	<EmbeddedResource Include="Sounds\kirameki.wav" />
+	<EmbeddedResource Include="Sounds\Null.wav" />
 	<EmbeddedResource Include="Sounds\over.wav" />
 	<EmbeddedResource Include="Sounds\recall.wav" />
 	<EmbeddedResource Include="Sounds\reply.wav" />
