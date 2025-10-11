@@ -3,9 +3,9 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
 
-namespace ScouterX.Windows
+namespace ScouterX
 {
-    public class SubWindow : Window, IDisposable
+    public class DrawManager : Window, IDisposable
     {
 		private readonly Plugin plugin;
 
@@ -29,7 +29,7 @@ namespace ScouterX.Windows
         private OverlaySettings F4Settings { get; set; }
 		private OverlaySettings F5Settings { get; set; }
 
-        public SubWindow(Plugin plugin)
+        public DrawManager(Plugin plugin)
             : base("Information Overlay##UniqueId",
                   ImGuiWindowFlags.NoDecoration |
                   ImGuiWindowFlags.NoBackground |

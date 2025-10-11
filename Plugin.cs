@@ -17,7 +17,6 @@ using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.ClientState.Conditions;
 using ImGuiNET;
-using NAudio.Wave;
 using ScouterX.Windows;
 using FFXIVClientStructs.FFXIV.Client.Game;
 
@@ -44,15 +43,14 @@ public sealed class Plugin : IDalamudPlugin
 	public Configuration Configuration { get; init; }
 	private const string CommandName = "/qm";
 	public readonly WindowSystem WindowSystem = new("ScouterX");
+
 	private MainWindow MainWindow { get; init; }
-	private SubWindow SubWindow { get; init; }
+	private DrawManager DrawManager { get; init; }
 	private ConfigWindow ConfigWindow { get; init; }
 
-	private readonly bool[] _keyPressStates = new bool[(int)VirtualKey.F12 + 1];
+	private AudioManager _audioManager;
 
-	private WaveOutEvent? _waveOut;
-	private readonly string _soundsDir;
-	private readonly Dictionary<string, byte[]> _soundCache = new();
+	private readonly bool[] _keyPressStates = new bool[(int)VirtualKey.F12 + 1];
 
 	public bool showF1Text = false;
 	public float f1Timer = 0f;
@@ -82,11 +80,11 @@ public sealed class Plugin : IDalamudPlugin
 		string imagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "icon.png");
 
 		MainWindow = new MainWindow(this, imagePath);
-		SubWindow = new SubWindow(this);
+		DrawManager = new DrawManager(this);
 		ConfigWindow = new ConfigWindow(this);
 
 		WindowSystem.AddWindow(MainWindow);
-		WindowSystem.AddWindow(SubWindow);
+		WindowSystem.AddWindow(DrawManager);
 		WindowSystem.AddWindow(ConfigWindow);
 
 		PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
@@ -105,8 +103,7 @@ public sealed class Plugin : IDalamudPlugin
 
 		Log.Information($"=== {PluginInterface.Manifest.Name} ===");
 
-		_soundsDir = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "Sounds");
-		PreloadAllSounds();
+		_audioManager = new AudioManager(Log);
 	}
 
 
@@ -124,16 +121,14 @@ public sealed class Plugin : IDalamudPlugin
 		CommandManager.RemoveHandler(CommandName);
 
 		WindowSystem.RemoveWindow(MainWindow);
-		WindowSystem.RemoveWindow(SubWindow);
+		WindowSystem.RemoveWindow(DrawManager);
 		WindowSystem.RemoveWindow(ConfigWindow);
 
 		MainWindow.Dispose();
-		SubWindow.Dispose();
+		DrawManager.Dispose();
 		ConfigWindow.Dispose();
 
-		_waveOut?.Stop();
-		_waveOut?.Dispose();
-		_soundCache.Clear();
+		_audioManager.Dispose();
 	}
 
 
@@ -148,9 +143,9 @@ public sealed class Plugin : IDalamudPlugin
 		HandleKeyPressEvent(VirtualKey.F3, HandleF3KeyPress);
 		HandleKeyPressEvent(VirtualKey.F4, HandleF4KeyPress);
 		HandleKeyPressEvent(VirtualKey.F5, HandleF5KeyPress);
-		HandleKeyPressEvent(VirtualKey.F7, () => { /* F7 */ });
-		HandleKeyPressEvent(VirtualKey.F9, () => { /* F9 */ });
-		HandleKeyPressEvent(VirtualKey.F11, () => { /* F11 */ });
+		//HandleKeyPressEvent(VirtualKey.F7, () => { /* F7 */ });
+		//HandleKeyPressEvent(VirtualKey.F9, () => { /* F9 */ });
+		//HandleKeyPressEvent(VirtualKey.F11, () => { /* F11 */ });
 
 		float delta = (float)Framework.UpdateDelta.TotalSeconds;
 		UpdateTextDisplayTimer(ref isF1TextActive, ref showF1Text, ref f1Timer, f1Duration, delta);
@@ -192,7 +187,7 @@ public sealed class Plugin : IDalamudPlugin
 	// ====== F1 ======
 	private void HandleF1KeyPress()
 	{
-		PlaySoundByName("warning.wav");
+		_audioManager.PlaySoundByName("warning.wav");
 		isF1TextActive = true;
 		f1Timer = f1Duration;
 		showF1Text = true;
@@ -207,7 +202,7 @@ public sealed class Plugin : IDalamudPlugin
 	// ====== F3 ======
 	private unsafe void HandleF3KeyPress()
 	{
-		PlaySoundByName("recall.wav");
+		_audioManager.PlaySoundByName("recall.wav");
 		isF3TextActive = true;
 		f3Timer = f3Duration;
 		showF3Text = true;
@@ -247,7 +242,7 @@ public sealed class Plugin : IDalamudPlugin
 	// ====== F4 ======
 	private void HandleF4KeyPress()
 	{
-		PlaySoundByName("alert.wav");
+		_audioManager.PlaySoundByName("alert.wav");
 		isF4TextActive = true;
 		f4Timer = f4Duration;
 		showF4Text = true;
@@ -262,10 +257,10 @@ public sealed class Plugin : IDalamudPlugin
 	// ====== F5 ======
 	private void HandleF5KeyPress()
 	{
+		_audioManager.PlaySoundByName("caution.wav");
 		isF5Running = true;
 		showF5Timer = true;
 		f5Remaining = 60f;
-		PlaySoundByName("timer.wav");
 
 		ChatGui.Print(new XivChatEntry
 		{
@@ -274,107 +269,28 @@ public sealed class Plugin : IDalamudPlugin
 		});
 	}
 
-	private void PreloadAllSounds()
+	private void WarmupAudio()
 	{
 		try
 		{
-			var assembly = Assembly.GetExecutingAssembly();
-			var resources = assembly.GetManifestResourceNames()
-				.Where(n => n.EndsWith(".wav", StringComparison.OrdinalIgnoreCase));
+			Log.Information("Warming up audio manager with Null.wav...");
+			_audioManager.PlaySoundByName("Null.wav");
 
-			foreach (var resName in resources)
-			{
-				using var stream = assembly.GetManifestResourceStream(resName);
-				if (stream == null)
-				{
-					Log.Warning($"Resource stream not found: {resName}");
-					continue;
-				}
-				using var mem = new MemoryStream();
-				stream.CopyTo(mem);
-				string key = Path.GetFileName(resName);
-				_soundCache[key] = mem.ToArray();
-			}
-			Log.Information($"Embedded {_soundCache.Count} sound(s) preloaded from resources.");
+			// 少し待ってから、確実に停止させます。
+			// PlaySoundByNameがTask.Runで実行されるため、SleepがないとPlaySoundByNameの実行前にStopAllSoundsが呼ばれる可能性がある
+			Thread.Sleep(200); // 200ms程度待機
+
+			// ウォームアップ用の無音再生をすぐに停止します
+			_audioManager.StopAllSounds(); // AudioManagerにStopAllSounds()を追加した場合
+
+			Log.Information("Audio manager warmed up.");
 		}
 		catch (Exception ex)
 		{
-			Log.Error($"Error preloading embedded sounds: {ex.Message}");
+			Log.Error($"Error warming up audio manager: {ex.Message}");
 		}
 	}
 
-	// ====== Sound ======
-	private MemoryStream? _activeStream;
-	private readonly object _soundLock = new();
-	private void PlaySoundByName(string fileName)
-	{
-		try
-		{
-			var assembly = Assembly.GetExecutingAssembly();
-			string? resourceName = assembly.GetManifestResourceNames()
-				.FirstOrDefault(n => n.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
-
-			if (resourceName == null)
-			{
-				Log.Warning($"Embedded sound not found: {fileName}");
-				return;
-			}
-
-			var stream = assembly.GetManifestResourceStream(resourceName);
-			if (stream == null)
-			{
-				Log.Warning($"Resource stream not found for {resourceName}");
-				return;
-			}
-
-            if (_waveOut != null)
-            {
-                try
-                {
-                    _waveOut.Stop();
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning($"WaveOut stop error: {ex.Message}");
-                }
-
-                try
-                {
-                    _waveOut.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning($"WaveOut dispose error: {ex.Message}");
-                }
-
-                _waveOut = null;
-            }
-
-            _activeStream?.Dispose();
-            _activeStream = null;
-
-            var memStream = new MemoryStream();
-            stream.CopyTo(memStream);
-            memStream.Position = 0;
-            _activeStream = memStream;
-
-            var reader = new WaveFileReader(memStream);
-            _waveOut = new WaveOutEvent();
-            _waveOut.Init(reader);
-            _waveOut.Play();
-
-            _waveOut.PlaybackStopped += (_, _) =>
-            {
-                try { reader.Dispose(); } catch { }
-                try { _activeStream?.Dispose(); _activeStream = null; } catch { }
-                try { _waveOut?.Dispose(); _waveOut = null; } catch { }
-            };
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"Error playing embedded sound '{fileName}': {ex.Message}");
-        }
-    }
 
 	// ====== GetStatus ======
 	private string GetLocalPlayerStatusIds()
@@ -406,14 +322,14 @@ public sealed class Plugin : IDalamudPlugin
 	{
 		if (!Configuration.OpenOnLogin) return;
     	MainWindow.IsOpen = false;
-    	SubWindow.IsOpen = true;
+    	DrawManager.IsOpen = true;
     	Log.Information("[ScouterX] Player logged in. Windows opened.");
 	}
 
 	private void OnLogout(int type, int code)
 	{
     	MainWindow.IsOpen = false;
-    	SubWindow.IsOpen = false;
+    	DrawManager.IsOpen = false;
     	Log.Information("[ScouterX] Player logged out. Windows closed.");
 	}
 }
