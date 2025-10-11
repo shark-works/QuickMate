@@ -47,7 +47,7 @@ namespace ScouterX.Windows
             {
                 TextColor = new(1.0f, 1.0f, 0.2f, 1.0f),
                 OutlineColor = new(0f, 0f, 0f, 1.0f),
-                FontScale = 1.5f,
+                FontScale = 2.5f,
                 OutlineThickness = 1.0f,
                 FixedX = 1500.0f,
                 FixedY = 500.0f,

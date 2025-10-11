@@ -157,12 +157,12 @@ public sealed class Plugin : IDalamudPlugin
 		UpdateTextDisplayTimer(ref isF3TextActive, ref showF3Text, ref f3Timer, f3Duration, delta);
 		UpdateTextDisplayTimer(ref isF4TextActive, ref showF4Text, ref f4Timer, f4Duration, delta);
 
-		// カウントダウン更新
+		// カウントダウンタイマー更新
 		if (isF5Running)
 		{
     		f5Remaining -= delta;
     		if (f5Remaining < 0f)
-        		f5Remaining = 0f;  // 即座に0固定
+        		f5Remaining = 0f;
 
     		if (f5Remaining == 0f)
     		{
@@ -170,21 +170,6 @@ public sealed class Plugin : IDalamudPlugin
         		showF5Timer = false;
     		}
 		}
-	}
-
-	private void OnLogin()
-	{
-		if (!Configuration.OpenOnLogin) return;
-    	MainWindow.IsOpen = false;
-    	SubWindow.IsOpen = true;
-    	Log.Information("[ScouterX] Player logged in. Windows opened.");
-	}
-
-	private void OnLogout(int type, int code)
-	{
-    	MainWindow.IsOpen = false;
-    	SubWindow.IsOpen = false;
-    	Log.Information("[ScouterX] Player logged out. Windows closed.");
 	}
 
 	private void HandleKeyPressEvent(VirtualKey key, Action? onPressed)
@@ -305,13 +290,11 @@ public sealed class Plugin : IDalamudPlugin
 					Log.Warning($"Resource stream not found: {resName}");
 					continue;
 				}
-
 				using var mem = new MemoryStream();
 				stream.CopyTo(mem);
 				string key = Path.GetFileName(resName);
 				_soundCache[key] = mem.ToArray();
 			}
-
 			Log.Information($"Embedded {_soundCache.Count} sound(s) preloaded from resources.");
 		}
 		catch (Exception ex)
@@ -322,18 +305,11 @@ public sealed class Plugin : IDalamudPlugin
 
 	// ====== Sound ======
 	private MemoryStream? _activeStream;
+	private readonly object _soundLock = new();
 	private void PlaySoundByName(string fileName)
 	{
 		try
 		{
-			// まずキャッシュ済みならそれを使う
-			if (_soundCache.TryGetValue(fileName, out var soundData))
-			{
-				PlayFromMemory(soundData, fileName);
-				return;
-			}
-
-			// まだキャッシュされていない場合 → 埋め込みリソースから読み込む
 			var assembly = Assembly.GetExecutingAssembly();
 			string? resourceName = assembly.GetManifestResourceNames()
 				.FirstOrDefault(n => n.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
@@ -344,90 +320,61 @@ public sealed class Plugin : IDalamudPlugin
 				return;
 			}
 
-			using var stream = assembly.GetManifestResourceStream(resourceName);
+			var stream = assembly.GetManifestResourceStream(resourceName);
 			if (stream == null)
 			{
 				Log.Warning($"Resource stream not found for {resourceName}");
 				return;
 			}
 
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			_soundCache[fileName] = mem.ToArray();
+            if (_waveOut != null)
+            {
+                try
+                {
+                    _waveOut.Stop();
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning($"WaveOut stop error: {ex.Message}");
+                }
 
-			PlayFromMemory(mem.ToArray(), fileName);
-		}
-		catch (Exception ex)
-		{
-			Log.Error($"Error playing embedded sound '{fileName}': {ex.Message}");
-		}
-	}
+                try
+                {
+                    _waveOut.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning($"WaveOut dispose error: {ex.Message}");
+                }
 
-	private void PlayFromMemory(byte[] soundData, string fileName)
-	{
-		try
-		{
-			// 再生中なら停止を要求
-			if (_waveOut != null)
-			{
-				try
-				{
-					_waveOut.Stop();
-					// 停止を待機（最大0.1秒）
-					int wait = 0;
-					while (_waveOut.PlaybackState != PlaybackState.Stopped && wait < 10)
-					{
-						Thread.Sleep(10);
-						wait++;
-					}
-				}
-				catch { /* 無視して続行 */ }
+                _waveOut = null;
+            }
 
-				_waveOut.Dispose();
-				_waveOut = null;
-			}
+            _activeStream?.Dispose();
+            _activeStream = null;
 
-			// 前回のストリーム破棄
-			_activeStream?.Dispose();
-			_activeStream = null;
+            var memStream = new MemoryStream();
+            stream.CopyTo(memStream);
+            memStream.Position = 0;
+            _activeStream = memStream;
 
-			// 新しいメモリストリームを作成（読み取り専用で閉じない）
-			var memStream = new MemoryStream(soundData, false);
-			_activeStream = memStream;
+            var reader = new WaveFileReader(memStream);
+            _waveOut = new WaveOutEvent();
+            _waveOut.Init(reader);
+            _waveOut.Play();
 
-			var reader = new WaveFileReader(memStream);
-			var waveOut = new WaveOutEvent();
-
-			_waveOut = waveOut;
-			_waveOut.Init(reader);
-			_waveOut.Play();
-
-			// 再生完了後に安全に解放
-			_waveOut.PlaybackStopped += (_, _) =>
-			{
-				try
-				{
-					reader.Dispose();
-					waveOut.Dispose();
-				}
-				catch { /* 二重Dispose防止 */ }
-
-				if (_activeStream != null)
-				{
-					_activeStream.Dispose();
-					_activeStream = null;
-				}
-
-				_waveOut = null;
-			};
-
-			Log.Information($"Playing embedded sound: {fileName}");
-		}
-		catch (Exception ex)
-		{
-			Log.Error($"Error during playback of '{fileName}': {ex.Message}");
-		}
-	}
+            _waveOut.PlaybackStopped += (_, _) =>
+            {
+                try { reader.Dispose(); } catch { }
+                try { _activeStream?.Dispose(); _activeStream = null; } catch { }
+                try { _waveOut?.Dispose(); _waveOut = null; } catch { }
+            };
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Error playing embedded sound '{fileName}': {ex.Message}");
+        }
+    }
 
 	// ====== GetStatus ======
 	private string GetLocalPlayerStatusIds()
@@ -453,5 +400,20 @@ public sealed class Plugin : IDalamudPlugin
 			showText = false;
 			timer = 0f;
 		}
+	}
+
+	private void OnLogin()
+	{
+		if (!Configuration.OpenOnLogin) return;
+    	MainWindow.IsOpen = false;
+    	SubWindow.IsOpen = true;
+    	Log.Information("[ScouterX] Player logged in. Windows opened.");
+	}
+
+	private void OnLogout(int type, int code)
+	{
+    	MainWindow.IsOpen = false;
+    	SubWindow.IsOpen = false;
+    	Log.Information("[ScouterX] Player logged out. Windows closed.");
 	}
 }
